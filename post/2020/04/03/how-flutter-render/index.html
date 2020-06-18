@@ -1,0 +1,187 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="X-UA-Compatible" content="chrome=1"><meta name="renderer" content="webkit|ie-comp|ie-stand"><meta name="referrer" content="no-referrer"><meta name="theme-color" content="#333333"><meta name="mobile-web-app-capable" content="yes"><meta name="google" content="notranslate"><meta name="format-detection" content="telephone=no"><meta name="keyword" content="冷石, 前端, 面试，Web, Js, CSS, Node.js, Frontend, Flutter, Docker, Dart, Mysql, Egg.js"><meta name="description" content="孑然一身，傲立于世"><title>Flutter 是如何渲染的？ - 冷石的博客</title><base href="/"><link rel="preconnect" href="//cdn.bootcss.com"><link rel="manifest" href="/manifest.json"><link rel="shortcut icon" href="/icons/icon-72x72.png"><link rel="apple-touch-icon" href="/icons/icon-192x192.png"><link href="https://cdn.bootcss.com/highlight.js/9.15.10/styles/atom-one-light.min.css" rel="stylesheet"><link href="https://cdn.bootcss.com/highlight.js/9.15.10/styles/atom-one-dark.min.css" rel="stylesheet" media="screen and (prefers-color-scheme:dark)"><link href="https://cdn.bootcss.com/uikit/3.2.0/css/uikit.min.css" rel="stylesheet"><script src="https://cdn.bootcss.com/uikit/3.2.0/js/uikit.min.js" async></script><script src="https://cdn.bootcss.com/uikit/3.2.0/js/uikit-icons.min.js" async></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aplayer/1.10.1/APlayer.min.css" integrity="sha256-uqQQGnDcmRKvhKwc5Vm4XT1GQ2oV6t1U0NR2N9tV+BQ=" crossorigin="anonymous"><link rel="stylesheet" href="/styles/cold-stone.css"><noscript><p class="text-center">你的浏览器还没开启 Javascript 功能！</p></noscript><meta name="generator" content="Hexo 4.0.0"></head><body><header class="header" uk-sticky="top: 100; animation: uk-animation-slide-top; bottom: #sticky-on-scroll-up"><nav class="wrapper header-content"><div class="nav-overlay uk-navbar-left"><h1 class="title nav-list-item uk-logo" data-link="/"><a href="/" data-link="/">冷石</a></h1><ul class="nav-list"><li class="nav-list-item" data-link="/activity/"><a class="nav-list-link" href="/activity">动态</a></li><li class="nav-list-item" data-link="/categories/"><a class="nav-list-link" href="/categories">分类</a></li><li class="nav-list-item" data-link="/about/"><a class="nav-list-link" href="/about/">关于</a></li></ul></div><div class="uk-navbar-right translate-x"><a class="uk-navbar-toggle" href="#modal-full" uk-search-icon uk-toggle></a></div></nav><div class="header-bar"></div></header><div id="modal-full" class="uk-modal-full uk-modal" uk-modal><div class="uk-modal-dialog uk-flex uk-flex-center uk-flex-middle" uk-height-viewport><button class="uk-modal-close-full" type="button" uk-close></button><form class="uk-search uk-search-large search-form" action="//google.com/search" method="get" accept-charset="UTF-8" target="_blank"><input class="uk-search-input search-form-input" type="search" name="q" placeholder="搜索" autofocus autocomplete="false"> <input type="hidden" name="sitesearch" value="https://coldstone.fun"></form></div></div><main class="main wrapper"><article class="article slide-in-right uk-article"><section class="article-header"><h1 class="article-title uk-article-title">Flutter 是如何渲染的？</h1><p class="article-meta uk-article-meta"><span class="meta-info"><span>最后更新&#58;<time class="post-time" datetime="2020-06-18">2020-06-18</time> </span><span>阅读时间&#58; 6 min</span> <span class="hide" id="busuanzi_container_page_pv">阅读量&#58; <span id="busuanzi_value_page_pv"></span></span></span></p></section><section class="article-content"><h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>使用 Flutter 开发移动端有一段时间了，总结一下关于 UI 渲染方面的知识。了解关于 Flutter 渲染方面的知识还是有必要的，可以帮助你开发更稳定，性能更高的应用。</p><p>要解答这个问题，首先需要认识到 Flutter 中有三棵树：<code>Widget</code> 树，<code>Element</code> 树和 <code>RenderObject</code> 树。</p><p>当应用启动时 Flutter 会遍历并创建所有的 <code>Widget</code> 形成 <code>Widget Tree</code>，同时与 <code>Widget Tree</code> 相对应，通过调用 <code>Widget</code> 上的 <code>createElement()</code> 方法创建每个 <code>Element</code> 对象，形成 <code>Element Tree</code>。</p><p>最后调用 <code>Element</code> 的 <code>createRenderObject()</code> 方法创建每个渲染对象，形成一个 <code>Render Tree</code>。</p><p>然后需要知道 <code>Widget</code>，<code>Element</code> 和 <code>RenderObject</code> 到底是啥以及它们是干什么的。</p><h2 id="什么是-Widget"><a href="#什么是-Widget" class="headerlink" title="什么是 Widget"></a>什么是 Widget</h2><p><code>Widget</code> 是 Flutter 的核心部分，是用户界面的不可变描述信息。正如 Flutter 的口号 <code>Everything’s a widget</code>, 用 Flutter 开发应用就是在写 <code>Widget</code> 🐶。</p><p>Flutter 的 <code>Widget</code> 不只表示 UI 控件，还表示一些功能性的组件，如路由跳转 <code>Navigator</code>，手势检测 <code>GestureDetector</code> 组件等。</p><pre><code class="dart">@immutable
+abstract class Widget extends DiagnosticableTree {
+  /// Initializes [key] for subclasses.
+  const Widget({ this.key });
+  final Key key;
+
+  /// ...
+
+  @protected
+  Element createElement();
+
+  /// ...
+
+  static bool canUpdate(Widget oldWidget, Widget newWidget) {
+    return oldWidget.runtimeType == newWidget.runtimeType
+      &amp;&amp; oldWidget.key == newWidget.key;
+  }
+}</code></pre><p><code>Widget</code> 的 <code>canUpdate</code> 方法通过比较新部件和旧部件的 <code>runtimeType</code> 和 <code>key</code> 属性是否相同来决定更新部件对应的 <code>Element</code>。</p><h2 id="什么是-Element"><a href="#什么是-Element" class="headerlink" title="什么是 Element"></a>什么是 Element</h2><p><code>Element</code> 是实例化的 <code>Widget</code> 对象，通过 <code>Widget</code> 的 <code>createElement()</code> 方法，在特定位置使用 <code>Widget</code> 配置数据生成。</p><p><code>Element</code> 用于管理应用 UI 的更新和更改，管理部件的生命周期，每个 <code>Element</code> 都包含对 <code>Widget</code> 和 <code>RenderObject</code> 的引用。</p><p><img src="./images/how-flutter-render/relationship.png" alt="relationship"></p><p>当 <code>Widget</code> 变化时，如果两个 <code>Widget</code> 的 <code>runtimeType</code> 和 <code>key</code> 属性相同的，那么新的 <code>Element</code> 会通过 <code>Element.update()</code> 更新旧的 <code>Element</code>，否则旧的 <code>Element</code> 会被删除，新生成的 <code>Element</code> 插入到树中。</p><pre><code class="dart">abstract class Element extends DiagnosticableTree implements BuildContext {
+  /// Creates an element that uses the given widget as its configuration.
+  ///
+  /// Typically called by an override of [Widget.createElement].
+  Element(Widget widget)
+    : assert(widget != null),
+      _widget = widget;
+
+  /// Change the widget used to configure this element.
+  ///
+  /// The framework calls this function when the parent wishes to use a
+  /// different widget to configure this element. The new widget is guaranteed
+  /// to have the same [runtimeType] as the old widget.
+  ///
+  /// This function is called only during the &quot;active&quot; lifecycle state.
+  @mustCallSuper
+  void update(covariant Widget newWidget) {
+    /// ...
+  }
+
+  /// Creates an instance of the [RenderObject] class that this
+  /// [RenderObjectWidget] represents, using the configuration described by this
+  /// [RenderObjectWidget].
+  ///
+  /// This method should not do anything with the children of the render object.
+  /// That should instead be handled by the method that overrides
+  /// [RenderObjectElement.mount] in the object rendered by this object&#39;s
+  /// [createElement] method. See, for example,
+  /// [SingleChildRenderObjectElement.mount].
+  @protected
+  RenderObject createRenderObject(BuildContext context);
+}</code></pre><h2 id="什么是-RenderObject"><a href="#什么是-RenderObject" class="headerlink" title="什么是 RenderObject"></a>什么是 RenderObject</h2><p><code>RenderObject</code> 用于应用界面的布局和绘制，保存了元素的大小，布局等信息，实例化一个 <code>RenderObject</code> 是非常耗能的。</p><p>当应用运行时 Flutter 使用 <code>RenderObject</code> 的数据绘制应用界面，最终形成一个 <code>Render Tree</code>。</p><pre><code class="dart">
+abstract class RenderObject extends AbstractNode with DiagnosticableTreeMixin implements HitTestTarget {
+  /// Initializes internal fields for subclasses.
+  RenderObject() {
+    _needsCompositing = isRepaintBoundary || alwaysNeedsCompositing;
+  }
+
+  /// The render object at (or below) this location in the tree.
+  ///
+  /// If this object is a [RenderObjectElement], the render object is the one at
+  /// this location in the tree. Otherwise, this getter will walk down the tree
+  /// until it finds a [RenderObjectElement].
+  RenderObject get renderObject {
+    RenderObject result;
+    void visit(Element element) {
+      assert(result == null); // this verifies that there&#39;s only one child
+      if (element is RenderObjectElement)
+        result = element.renderObject;
+      else
+        element.visitChildren(visit);
+    }
+    visit(this);
+    return result;
+  }
+
+  void layout(Constraints constraints, { bool parentUsesSize = false }) {
+    /// ...
+  }
+
+  /// ...
+
+  void paint(PaintingContext context, Offset offset) {
+    /// ...
+  }
+
+}</code></pre><h2 id="为什么需要三棵树"><a href="#为什么需要三棵树" class="headerlink" title="为什么需要三棵树"></a>为什么需要三棵树</h2><p>使用三棵树的目的是尽可能复用 <code>Element</code>。</p><p>复用 <code>Element</code> 对性能非常重要，因为 <code>Element</code> 拥有两份关键数据：<code>Stateful widget</code> 的状态对象及底层的<br><code>RenderObject</code>。</p><p>当应用的结构很简单时，或许体现不出这种优势，一旦应用复杂起来，构成页面的元素越来越多，重新创建 3 棵树的代价是很高的，所以需要最小化更新操作。</p><p>当 Flutter 能够复用 <code>Element</code> 时，用户界面的逻辑状态信息是不变的，并且可以重用之前计算的布局信息，避免遍历整棵树。</p><h2 id="举个例子说明"><a href="#举个例子说明" class="headerlink" title="举个例子说明"></a>举个例子说明</h2><p>创建一个简单的 Flutter 应用，代码如下</p><pre><code class="dart">import &#39;package:flutter/material.dart&#39;;
+
+void main() {
+  runApp(
+    MaterialApp(
+      color: Colors.white,
+      debugShowCheckedModeBanner: false,
+      builder: (context, child) =&gt; HomePage(),
+    ),
+  );
+}
+
+class HomePage extends StatefulWidget {
+  @override
+  _HomePageState createState() =&gt; _HomePageState();
+}
+
+class _HomePageState extends State&lt;HomePage&gt; {
+  bool _isWorld = true;
+
+  Widget _buildWorld() {
+    return RichText(
+      text: TextSpan(
+        text: &#39;Hello world&#39;,
+        style: TextStyle(color: Colors.black),
+      ),
+    );
+  }
+
+  Widget _buildFlutter() {
+    return RichText(
+      text: TextSpan(
+        text: &#39;Hello flutter&#39;,
+        style: TextStyle(color: Colors.black),
+      ),
+    );
+  }
+
+  void changeText() {
+    setState(() {
+      _isWorld = !_isWorld;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: &lt;Widget&gt;[
+          Center(
+            child: _isWorld ? _buildWorld() : _buildFlutter(),
+          ),
+          SizedBox(height: 20.0),
+          // Padding(padding: EdgeInsets.only(top: 20.0)),
+          IconButton(icon: Icon(Icons.refresh), onPressed: changeText)
+        ],
+      ),
+    );
+  }
+}
+</code></pre><p>显示效果</p><img src="./images/how-flutter-render/simulator-world.png" style="width:320px"><p>打开 <a href="http://127.0.0.1:9100" target="_blank" rel="noopener">Dart DevTools</a>，可以看到应用的 <code>Widget Tree</code>，此时 <code>RichText</code> 控件的 <code>RenderObject</code> 的 ID 是 <code>#6276a</code></p><p><img src="./images/how-flutter-render/world-id.png" alt="world-id"></p><p>点击图标将文字变成 <code>Hello flutter</code> 时</p><img src="./images/how-flutter-render/simulator-flutter.png" style="width:320px"><p>刷新浏览器页面再次查看 <code>RichText</code> 的 <code>RenderObject</code> 的 ID 依然是 <code>#6276a</code></p><p><img src="./images/how-flutter-render/flutter-id.png" alt="flutter-id"></p><p>可以发现 Flutter 只是更新了文字数据，复用了 <code>RichText</code> 对应的 <code>Element</code> 和 <code>RenderObject</code>。</p><p>而使用 <code>SizedBox</code> 部件取代 <code>Padding</code> 部件时。</p><pre><code class="dart">@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    body: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: &lt;Widget&gt;[
+        Center(
+          child: RichText(
+            text: TextSpan(
+              text: &#39;Hello $text&#39;,
+              style: TextStyle(color: Colors.black),
+            ),
+          ),
+        ),
+        SizedBox(height: 20.0),
+        // Padding(padding: EdgeInsets.only(top: 20.0)),
+        IconButton(icon: Icon(Icons.refresh), onPressed: changeText)
+      ],
+    ),
+  );
+}</code></pre><p><img src="./images/how-flutter-render/padding.png" alt="padding"></p><p><code>Padding</code> 部件对应的 <code>Element</code> 和 <code>RenderObject</code> 都会被从树中移除，使用 <code>SizedBox</code> 新生成的替代。</p><p><img src="./images/how-flutter-render/sizeedbox.png" alt="sizeedbox"></p><h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p><code>Widget</code> 是应用界面的声明信息。<br><code>Element</code> 链接 <code>Widget</code> 和 <code>RenderObject</code>，管理界面的更新和修改。<br><code>RenderObject</code> 保存具体的布局信息，负责绘制 UI。</p><p><img src="./images/how-flutter-render/widget-element-render-object.png" alt="widget-element-render-object"></p><h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p><a href="https://youtu.be/996ZgFRENMs" target="_blank" rel="noopener">How Flutter renders Widgets</a> (Video)</p><p><a href="https://medium.com/manabie/how-flutter-renders-widgets-fd6eca945a04" target="_blank" rel="noopener">How Flutter renders Widgets</a></p><p><a href="https://book.flutterchina.club/chapter14/flutter_ui_system.html" target="_blank" rel="noopener">Flutter UI系统</a></p></section><hr><p class="article-license"><span>本文采用<a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode.zh-Hans" target="_blank">知识共享署名-非商业性使用-相同方式共享 4.0 国际许可协议</a>进行许可 </span><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode.zh-Hans" target="_blank"><img class="license-img" alt="知识共享许可协议" src="https://img.shields.io/badge/license-BY--NC--SA%204.0-green"></a></p></article><section class="prev-next card slide-in-right"><a href="/post/2020/04/13/flutter-stream/" class="link prev" title="在 Flutter 里使用 Stream"><span class="hover-underline-animation">&larr; 在 Flutter 里使用 Stream</span> </a><a href="/post/2020/03/26/learn-classchart-flowchart/" class="link next" title="PlantUML 类图及 Flowchart 流程图绘制入门"><span class="hover-underline-animation">PlantUML 类图及 Flowchart 流程图绘制入门 &rarr;</span></a></section><section class="article-toc"><div class="card"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#什么是-Widget"><span class="toc-text">什么是 Widget</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#什么是-Element"><span class="toc-text">什么是 Element</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#什么是-RenderObject"><span class="toc-text">什么是 RenderObject</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#为什么需要三棵树"><span class="toc-text">为什么需要三棵树</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#举个例子说明"><span class="toc-text">举个例子说明</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-text">总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考"><span class="toc-text">参考</span></a></li></ol></div><div class="card uk-inline-clip uk-padding-remove"><img class="zanshang-img" src="/zanshang.jpg"></div></section><section class="article slide-in-right"><div class="loader" id="loader"><svg viewBox="0 0 50 50"><circle class="ring" cx="25" cy="25" r="20"></circle><circle class="ball" cx="25" cy="5" r="3.5"></circle></svg></div><div class="comment" id="utteranc"></div><noscript>Please activate JavaScript for normal use of comments</noscript></section><a class="card back-to-top" id="backTop">&UpArrow;</a><div id="player"></div></main><script>window.COLD_STONE={root:"/",author:"ColdStone",gaid:"UA-119658292-2",repo:"xrr2016/blog"}</script><script src="https://cdn.bootcss.com/highlight.js/9.15.10/highlight.min.js"></script><script>hljs.initHighlightingOnLoad()</script><script src="https://cdnjs.cloudflare.com/ajax/libs/aplayer/1.10.1/APlayer.min.js" integrity="sha256-6Y7CJDaltoeNgk+ZftgCD9jLgmGv4xKUo8nQ0HgAwVo=" crossorigin="anonymous"></script><script>const ap = new APlayer({
+		container: document.getElementById('player'),
+		fixed: true,
+		audio: [{
+				name: 'DNF·风一样的勇士编钟国乐版',
+				artist: '湖北省博物馆编钟乐团',
+				url: './audios/dnf.mp3',
+				cover: './images/cover.jpg',
+			},
+			{
+				name: 'さくら～あなたに出会えてよかった～',
+				artist: 'Real Street Performance',
+				url: './audios/dnf.mp3',
+				cover: './images/cover2.jpg',
+			},
+			// {
+			// name: '我不配',
+			// artist: '周杰伦',
+			// url: './audios/dnf.mp3',
+			// cover: './images/cover3.jpg',
+			// }
+		]
+	});</script><script src="/scripts/busuanzi.js" referrerpolicy="origin"></script><script src="/scripts/cold-stone.js"></script><script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5eeae335b32b6f13"></script><script src="//www.googletagmanager.com/gtag/js?id=UA-119658292-2"></script><script>function gtag(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],gtag("js",new Date),gtag("config",window.COLD_STONE.gaid)</script></body></html>

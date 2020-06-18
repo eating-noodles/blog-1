@@ -1,0 +1,115 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="X-UA-Compatible" content="chrome=1"><meta name="renderer" content="webkit|ie-comp|ie-stand"><meta name="referrer" content="no-referrer"><meta name="theme-color" content="#333333"><meta name="mobile-web-app-capable" content="yes"><meta name="google" content="notranslate"><meta name="format-detection" content="telephone=no"><meta name="keyword" content="冷石, 前端, 面试，Web, Js, CSS, Node.js, Frontend, Flutter, Docker, Dart, Mysql, Egg.js"><meta name="description" content="孑然一身，傲立于世"><title>PlantUML 类图及 Flowchart 流程图绘制入门 - 冷石的博客</title><base href="/"><link rel="preconnect" href="//cdn.bootcss.com"><link rel="manifest" href="/manifest.json"><link rel="shortcut icon" href="/icons/icon-72x72.png"><link rel="apple-touch-icon" href="/icons/icon-192x192.png"><link href="https://cdn.bootcss.com/highlight.js/9.15.10/styles/atom-one-light.min.css" rel="stylesheet"><link href="https://cdn.bootcss.com/highlight.js/9.15.10/styles/atom-one-dark.min.css" rel="stylesheet" media="screen and (prefers-color-scheme:dark)"><link href="https://cdn.bootcss.com/uikit/3.2.0/css/uikit.min.css" rel="stylesheet"><script src="https://cdn.bootcss.com/uikit/3.2.0/js/uikit.min.js" async></script><script src="https://cdn.bootcss.com/uikit/3.2.0/js/uikit-icons.min.js" async></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aplayer/1.10.1/APlayer.min.css" integrity="sha256-uqQQGnDcmRKvhKwc5Vm4XT1GQ2oV6t1U0NR2N9tV+BQ=" crossorigin="anonymous"><link rel="stylesheet" href="/styles/cold-stone.css"><noscript><p class="text-center">你的浏览器还没开启 Javascript 功能！</p></noscript><meta name="generator" content="Hexo 4.0.0"></head><body><header class="header" uk-sticky="top: 100; animation: uk-animation-slide-top; bottom: #sticky-on-scroll-up"><nav class="wrapper header-content"><div class="nav-overlay uk-navbar-left"><h1 class="title nav-list-item uk-logo" data-link="/"><a href="/" data-link="/">冷石</a></h1><ul class="nav-list"><li class="nav-list-item" data-link="/activity/"><a class="nav-list-link" href="/activity">动态</a></li><li class="nav-list-item" data-link="/categories/"><a class="nav-list-link" href="/categories">分类</a></li><li class="nav-list-item" data-link="/about/"><a class="nav-list-link" href="/about/">关于</a></li></ul></div><div class="uk-navbar-right translate-x"><a class="uk-navbar-toggle" href="#modal-full" uk-search-icon uk-toggle></a></div></nav><div class="header-bar"></div></header><div id="modal-full" class="uk-modal-full uk-modal" uk-modal><div class="uk-modal-dialog uk-flex uk-flex-center uk-flex-middle" uk-height-viewport><button class="uk-modal-close-full" type="button" uk-close></button><form class="uk-search uk-search-large search-form" action="//google.com/search" method="get" accept-charset="UTF-8" target="_blank"><input class="uk-search-input search-form-input" type="search" name="q" placeholder="搜索" autofocus autocomplete="false"> <input type="hidden" name="sitesearch" value="https://coldstone.fun"></form></div></div><main class="main wrapper"><article class="article slide-in-right uk-article"><section class="article-header"><h1 class="article-title uk-article-title">PlantUML 类图及 Flowchart 流程图绘制入门</h1><p class="article-meta uk-article-meta"><span class="meta-info"><span>最后更新&#58;<time class="post-time" datetime="2020-06-18">2020-06-18</time> </span><span>阅读时间&#58; 3 min</span> <span class="hide" id="busuanzi_container_page_pv">阅读量&#58; <span id="busuanzi_value_page_pv"></span></span></span></p></section><section class="article-content"><h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>前段时间设计后端表结构的时候接触了 <code>PlantUML</code>，它能够直观表现出类的属性和方法，反应出类与类之间的关系。之前有同事就是用 <code>PlantUML</code> 来做后端数据表设计工作的，所以有必要学习一下。</p><p>流程图 <code>Flowchart</code> 是用来展示操作过程或逻辑流程的一种图表，语法比较简单，方便易用，一些比较复杂的判断都可以使用一个流程图来直观表现。</p><h2 id="PlantUML"><a href="#PlantUML" class="headerlink" title="PlantUML"></a>PlantUML</h2><p><a href="https://plantuml.com/zh/" target="_blank" rel="noopener">PlantUML</a> 是一个开源项目，支持快速绘制时序图、用例图、类图、活动图、组件图、状态图、对象图、部署图等。同时还支持非 UML 图的甘特图、架构图等。</p><p><code>PlantUML</code> 有一些通用语法</p><ul><li>单行注释：以单引号 <code>&#39;</code> 开头的语句。</li><li>多行注释：以 <code>/&#39;</code> 和 <code>&#39;/</code> 作为注释的开始和结束。</li><li>页眉：使用 <code>header</code> 命令在生成的图中增加页眉，用 <code>center</code>, <code>left</code> 或 <code>right</code> 实现居中、左对齐和右对齐。</li><li>页脚：使用 <code>footer</code> 命令在生成的图中增加页眉，用 <code>center</code>, <code>left</code> 或 <code>right</code> 实现居中、左对齐和右对齐。</li><li>缩放：使用 <code>scale</code> 命令缩放生成的图像。</li><li>标题：使用 <code>title</code> 关键字添加标题。</li><li>图片标题：使用 <code>caption</code> 关键字在图像下放置一个标题.</li><li>图例说明: <code>legend</code> 和 <code>endlegend</code> 作为关键词，使用 <code>left</code>, <code>right</code>, <code>center</code> 为这个图例指定对齐方式。</li></ul><p>一个🌰 <a href="http://www.plantuml.com/plantuml/uml/FO_D2i8m48JlynHxAmZI8eBYGIhU12_Y2uHsRHVo8ytMvtVHj8V0DxERcQJDwYQTWqVkd6Swx9hD_jW0rOMonC4iBv6fIo5mLA2kGFGS9PDae_liLRomuRMiL3M0peWd6jdrFA7iBv9ZNmWgQXNB_AViidkhfBZQHGEF53ZHzaotsJgLJkJJXwtEys2XQu-ZOjWfX5TAzg8ryo_Hsin-_mK0" target="_blank" rel="noopener">查看</a></p><pre><code class="uml">@startuml
+scale 720*480
+
+&#39;A single line comment
+
+/&#39;
+  This is
+  Multilie
+  Comment
+&#39;/
+
+
+center header
+This is header
+endheader
+
+title This is title
+
+caption This is caption
+
+Romeo -&gt; Juliet : love
+
+
+legend
+This is a legend
+endlegend
+
+footer This is footer
+@enduml</code></pre><img style="width:320px" alt="base" src="http://www.plantuml.com/plantuml/png/HP3D2i8m48JlynHxAmZI8eBYGIhU12_Y2uHsRHVo8ytMvtUnFrwIRoQp6TWwgnjq31wvSPxfiAis-sC551VA4Zkpl4Ic9eN0KO6o0D6pbqoIZUwZL_72XjSvKfG06YCUg6VNseLvODKSsma15RMI9V1JDkxUAYckzgo1HmgSQ7kcssYjIYVowSC0F7VswR_9qUBOCI7mIacjVibC4hMzsGQ-"><h3 id="类图"><a href="#类图" class="headerlink" title="类图"></a>类图</h3><p>画类图需要了解类与类之间的几种不同的关系</p><table><thead><tr><th align="left">关系</th><th align="left">意思</th><th align="left">标记</th></tr></thead><tbody><tr><td align="left">Association 关系</td><td align="left">两个类之间有相互关系</td><td align="left"><code>&lt;--</code></td></tr><tr><td align="left">Inheritance 继承</td><td align="left">子类继承父类</td><td align="left"><code>&lt;|--</code></td></tr><tr><td align="left">Composition 组合</td><td align="left">两个类之间相互依赖</td><td align="left"><code>*--</code></td></tr><tr><td align="left">Aggregation 聚合</td><td align="left">一个类属于另一个类</td><td align="left"><code>o--</code></td></tr><tr><td align="left">Implementation 实现</td><td align="left">一个类实现另一个类的方法</td><td align="left"><code>&lt;|..</code></td></tr><tr><td align="left">Dependency 依赖</td><td align="left">一个类依赖于另一个类</td><td align="left"><code>&lt;..</code></td></tr></tbody></table><p><img src="https://miro.medium.com/max/1180/1*EUvDMA1vr0DiucONPzK9kA.png" alt="关系图"></p><p>设计一个博客系统😜 <a href="http://www.plantuml.com/plantuml/umla/XPBHwjCm58VlynJdSdDs3lL2YiZ4Hn2zh-t11TeKaenTw63Wc5CSSwB3JS4v54MXkn2nEFLfbgQ-XUiQszaXV-X5slFzlfoSj2samsKty8bm7H_XyfNMkKiNMyH59f531nqFETd5WrtyIKS3DNcXbqCrMQfehRzizVODGUOPYX3NTuI0srHG6NAuH-0E3ti2QtNIBwhNkQIkZrcr0TIpWJAPBPskx8IyU7L39f596uJabDqz4jmIU713mwIp9NC2jE5cpWBi7mjwd4eqszKgllg1SCCWG2R_o_IBfhs0icnJ2ppqiTIQ5kfbvKRk_AU27fMLnFdoXCTK9LsXeEp8W2U3g9mX-tGqsIn_cD_L-vPbJcK3wEYjVZfIivV9wqTglFgzU7T1_vYdlsR9_A7-l5BFdgIROHfztzzz-k2dUlpAI9hDuZfjqCy_9kDlQhhPRT-hqIAFbg1f-1JCrUIloBAk5N-G3KaSgsYTiydNQVfXRBn6ToPkx6raNZVm_m00" target="_blank" rel="noopener">点击查看</a></p><pre><code class="uml">@startuml
+center header
+一个简单的博客系统
+endheader
+
+
+class Visitor {
+ browse()
+}
+
+
+class Article {
+ + id: int
+ + author: int
+ + content: string
+}
+
+
+class User {
+  +id: int
+  +name: String
+
+  - writeArticle(content: string)
+  - commentArticle(content: string)
+}
+
+class Admin {
+ - deleteArticle(id: int)
+ - deleteComment(id: int)
+ - editArticle(id: int, content: int)
+ - editComment(id: int, content: int)
+}
+
+class Comment {
+  +id: int
+  +content: string
+  +author: int
+}
+
+User &lt;|-- Admin : 管理员有删除/编辑文章和评论的能力
+User &lt;.. Article : 用户可以写文章
+User &lt;.. Comment : 用户可以写评论
+Article --&gt; Visitor : 游客可以浏览文章
+Comment --&gt; Visitor : 游客可以浏览评论
+@enduml</code></pre><p><img src="./images/learn-chart/class.png" alt="blog"></p><h2 id="Flowchart"><a href="#Flowchart" class="headerlink" title="Flowchart"></a>Flowchart</h2><p>流程图使用 <a href="http://flowchart.js.org/" target="_blank" rel="noopener">Flowchart</a> 绘制，语法比较简单。</p><p>定义一个流程图元素 <code>name=&gt;type: content:&gt;url</code></p><ul><li>name: 元素的名称</li><li>type：类型，包括如下类别：<ul><li>start</li><li>end</li><li>operation</li><li>subroutine</li><li>condition</li><li>inputoutput</li><li>parallel</li></ul></li><li>content：文本内容</li><li>url：连接</li></ul><p>示例如下</p><pre><code class="ts">st=&gt;start: 艰难的开始
+ge=&gt;end: 你成功了:&gt;https://www.zhihu.com/hot
+be=&gt;end: 你失败了:&gt;https://bbs.hupu.com/bxj
+
+skill=&gt;condition: 有技能吗
+money=&gt;condition: 有钱吗
+handsome=&gt;condition: 长得帅吗
+
+dream=&gt;operation: 做梦
+imp=&gt;operation: 努力提高自己
+work=&gt;operation: 工作/读书
+make=&gt;operation: 投资理财
+rich=&gt;operation: 找富婆
+
+st-&gt;skill
+skill(yes)-&gt;work-&gt;ge
+skill(no)-&gt;money
+money(yes)-&gt;make-&gt;ge
+money(no)-&gt;handsome
+handsome(yes)-&gt;rich-&gt;ge
+handsome(no)-&gt;be</code></pre><p><img src="./images/learn-chart/flow.png" alt="start"></p><h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p><a href="https://plantuml.com/zh/" target="_blank" rel="noopener">PlantUML</a></p><p><a href="https://github.com/adrai/flowchart.js" target="_blank" rel="noopener">Flowchart</a></p><p><a href="https://medium.com/@smagid_allThings/uml-class-diagrams-tutorial-step-by-step-520fd83b300b" target="_blank" rel="noopener">UML Class Diagrams Tutorial, Step by Step</a></p></section><hr><p class="article-license"><span>本文采用<a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode.zh-Hans" target="_blank">知识共享署名-非商业性使用-相同方式共享 4.0 国际许可协议</a>进行许可 </span><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode.zh-Hans" target="_blank"><img class="license-img" alt="知识共享许可协议" src="https://img.shields.io/badge/license-BY--NC--SA%204.0-green"></a></p></article><section class="prev-next card slide-in-right"><a href="/post/2020/04/03/how-flutter-render/" class="link prev" title="Flutter 是如何渲染的？"><span class="hover-underline-animation">&larr; Flutter 是如何渲染的？</span> </a><a href="/post/2020/03/24/flutter-dropdown-problem/" class="link next" title="记录两个使用 Flutter 的 DropdownButton 问题"><span class="hover-underline-animation">记录两个使用 Flutter 的 DropdownButton 问题 &rarr;</span></a></section><section class="article-toc"><div class="card"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#PlantUML"><span class="toc-text">PlantUML</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#类图"><span class="toc-text">类图</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Flowchart"><span class="toc-text">Flowchart</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考"><span class="toc-text">参考</span></a></li></ol></div><div class="card uk-inline-clip uk-padding-remove"><img class="zanshang-img" src="/zanshang.jpg"></div></section><section class="article slide-in-right"><div class="loader" id="loader"><svg viewBox="0 0 50 50"><circle class="ring" cx="25" cy="25" r="20"></circle><circle class="ball" cx="25" cy="5" r="3.5"></circle></svg></div><div class="comment" id="utteranc"></div><noscript>Please activate JavaScript for normal use of comments</noscript></section><a class="card back-to-top" id="backTop">&UpArrow;</a><div id="player"></div></main><script>window.COLD_STONE={root:"/",author:"ColdStone",gaid:"UA-119658292-2",repo:"xrr2016/blog"}</script><script src="https://cdn.bootcss.com/highlight.js/9.15.10/highlight.min.js"></script><script>hljs.initHighlightingOnLoad()</script><script src="https://cdnjs.cloudflare.com/ajax/libs/aplayer/1.10.1/APlayer.min.js" integrity="sha256-6Y7CJDaltoeNgk+ZftgCD9jLgmGv4xKUo8nQ0HgAwVo=" crossorigin="anonymous"></script><script>const ap = new APlayer({
+		container: document.getElementById('player'),
+		fixed: true,
+		audio: [{
+				name: 'DNF·风一样的勇士编钟国乐版',
+				artist: '湖北省博物馆编钟乐团',
+				url: './audios/dnf.mp3',
+				cover: './images/cover.jpg',
+			},
+			{
+				name: 'さくら～あなたに出会えてよかった～',
+				artist: 'Real Street Performance',
+				url: './audios/dnf.mp3',
+				cover: './images/cover2.jpg',
+			},
+			// {
+			// name: '我不配',
+			// artist: '周杰伦',
+			// url: './audios/dnf.mp3',
+			// cover: './images/cover3.jpg',
+			// }
+		]
+	});</script><script src="/scripts/busuanzi.js" referrerpolicy="origin"></script><script src="/scripts/cold-stone.js"></script><script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5eeae335b32b6f13"></script><script src="//www.googletagmanager.com/gtag/js?id=UA-119658292-2"></script><script>function gtag(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],gtag("js",new Date),gtag("config",window.COLD_STONE.gaid)</script></body></html>

@@ -1,0 +1,1 @@
+function maxProfit(t){let n=0,a=t[0];for(let e=1;e<t.length;e++)n=Math.max(n,t[e]-a),a=Math.min(a,t[e]);return n}

@@ -1,0 +1,1 @@
+const bestOfYou=t=>{let e=0,a=0;for(let h=1;h<t.length;h++)e=Math.max(e,t[h-1]+h-1),a=Math.max(a,e+t[h]-h);return a};

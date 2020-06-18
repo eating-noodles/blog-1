@@ -1,0 +1,538 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="X-UA-Compatible" content="chrome=1"><meta name="renderer" content="webkit|ie-comp|ie-stand"><meta name="referrer" content="no-referrer"><meta name="theme-color" content="#333333"><meta name="mobile-web-app-capable" content="yes"><meta name="google" content="notranslate"><meta name="format-detection" content="telephone=no"><meta name="keyword" content="冷石, 前端, 面试，Web, Js, CSS, Node.js, Frontend, Flutter, Docker, Dart, Mysql, Egg.js"><meta name="description" content="孑然一身，傲立于世"><title>从零开始的 Flutter 动画 - 冷石的博客</title><base href="/"><link rel="preconnect" href="//cdn.bootcss.com"><link rel="manifest" href="/manifest.json"><link rel="shortcut icon" href="/icons/icon-72x72.png"><link rel="apple-touch-icon" href="/icons/icon-192x192.png"><link href="https://cdn.bootcss.com/highlight.js/9.15.10/styles/atom-one-light.min.css" rel="stylesheet"><link href="https://cdn.bootcss.com/highlight.js/9.15.10/styles/atom-one-dark.min.css" rel="stylesheet" media="screen and (prefers-color-scheme:dark)"><link href="https://cdn.bootcss.com/uikit/3.2.0/css/uikit.min.css" rel="stylesheet"><script src="https://cdn.bootcss.com/uikit/3.2.0/js/uikit.min.js" async></script><script src="https://cdn.bootcss.com/uikit/3.2.0/js/uikit-icons.min.js" async></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aplayer/1.10.1/APlayer.min.css" integrity="sha256-uqQQGnDcmRKvhKwc5Vm4XT1GQ2oV6t1U0NR2N9tV+BQ=" crossorigin="anonymous"><link rel="stylesheet" href="/styles/cold-stone.css"><noscript><p class="text-center">你的浏览器还没开启 Javascript 功能！</p></noscript><meta name="generator" content="Hexo 4.0.0"></head><body><header class="header" uk-sticky="top: 100; animation: uk-animation-slide-top; bottom: #sticky-on-scroll-up"><nav class="wrapper header-content"><div class="nav-overlay uk-navbar-left"><h1 class="title nav-list-item uk-logo" data-link="/"><a href="/" data-link="/">冷石</a></h1><ul class="nav-list"><li class="nav-list-item" data-link="/activity/"><a class="nav-list-link" href="/activity">动态</a></li><li class="nav-list-item" data-link="/categories/"><a class="nav-list-link" href="/categories">分类</a></li><li class="nav-list-item" data-link="/about/"><a class="nav-list-link" href="/about/">关于</a></li></ul></div><div class="uk-navbar-right translate-x"><a class="uk-navbar-toggle" href="#modal-full" uk-search-icon uk-toggle></a></div></nav><div class="header-bar"></div></header><div id="modal-full" class="uk-modal-full uk-modal" uk-modal><div class="uk-modal-dialog uk-flex uk-flex-center uk-flex-middle" uk-height-viewport><button class="uk-modal-close-full" type="button" uk-close></button><form class="uk-search uk-search-large search-form" action="//google.com/search" method="get" accept-charset="UTF-8" target="_blank"><input class="uk-search-input search-form-input" type="search" name="q" placeholder="搜索" autofocus autocomplete="false"> <input type="hidden" name="sitesearch" value="https://coldstone.fun"></form></div></div><main class="main wrapper"><article class="article slide-in-right uk-article"><section class="article-header"><h1 class="article-title uk-article-title">从零开始的 Flutter 动画</h1><p class="article-meta uk-article-meta"><span class="meta-info"><span>最后更新&#58;<time class="post-time" datetime="2020-06-18">2020-06-18</time> </span><span>阅读时间&#58; 11 min</span> <span class="hide" id="busuanzi_container_page_pv">阅读量&#58; <span id="busuanzi_value_page_pv"></span></span></span></p></section><section class="article-content"><h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>动画本质是在一段时间内不断改变屏幕上显示的内容，从而产生<a href="https://zh.wikipedia.org/wiki/%E8%A6%96%E8%A6%BA%E6%9A%AB%E7%95%99" target="_blank" rel="noopener">视觉暂留</a>现象。</p><p>动画一般可分为两类：</p><p><strong>补间动画</strong>：补间动画是一种预先定义物体运动的起点和终点，物体的运动方式，运动时间，时间曲线，然后从起点过渡到终点的动画。</p><p><strong>基于物理的动画</strong>：基于物理的动画是一种模拟现实世界运动的动画，通过建立运动模型来实现。例如一个篮球🏀从高处落下，需要根据其下落高度，重力加速度，地面反弹力等影响因素来建立运动模型。</p><h2 id="Flutter-中的动画"><a href="#Flutter-中的动画" class="headerlink" title="Flutter 中的动画"></a>Flutter 中的动画</h2><p>Flutter 中有多种类型的动画，先从一个简单的例子开始，使用一个 <code>AnimatedContainer</code> 控件，然后设置动画时长 <code>duration</code>，最后调用 <code>setState</code> 方法改变需要变化的属性值，一个动画就创建了。</p><img src="./images/flutter-animation-from-zero/animated-container.gif" alt="animated-container" style="width:240px" width="240"><p>代码如下</p><pre><code class="dart">import &#39;package:flutter/material.dart&#39;;
+
+class AnimatedContainerPage extends StatefulWidget {
+  @override
+  _AnimatedContainerPageState createState() =&gt; _AnimatedContainerPageState();
+}
+
+class _AnimatedContainerPageState extends State&lt;AnimatedContainerPage&gt; {
+  // 初始的属性值
+  double size = 100;
+  double raidus = 25;
+  Color color = Colors.yellow;
+
+  void _animate() {
+    // 改变属性值
+    setState(() {
+      size = size == 100 ? 200 : 100;
+      raidus = raidus == 25 ? 100 : 25;
+      color = color == Colors.yellow ? Colors.greenAccent : Colors.yellow;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(&#39;Animated Container&#39;)),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // 在 AnimatedContainer 上应用属性值
+            AnimatedContainer(
+              width: size,
+              height: size,
+              curve: Curves.easeIn,
+              padding: const EdgeInsets.all(20.0),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(raidus),
+              ),
+              duration: Duration(seconds: 1),
+              child: FlutterLogo(),
+            )
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _animate,
+        child: Icon(Icons.refresh),
+      ),
+    );
+  }
+}
+</code></pre><p>这是一个隐式动画，除此之外还有显式动画，Hreo 动画，交织动画。</p><h2 id="基础概念"><a href="#基础概念" class="headerlink" title="基础概念"></a>基础概念</h2><p>Flutter 动画是建立在以下的概念之上。</p><p><code>Animation</code></p><p>Flutter 中的动画系统基于 <code>Animation</code> 对象， 它是一个抽象类，保存了当前动画的值和状态（开始、暂停、前进、倒退），但不记录屏幕上显示的内容。UI 元素通过读取 <code>Animation</code> 对象的值和监听状态变化运行 <code>build</code> 函数，然后渲染到屏幕上形成动画效果。</p><p>一个 <code>Animation</code> 对象在一段时间内会持续生成介于两个值之间的值，比较常见的类型是 <code>Animation&lt;double&gt;</code>，除 <code>double</code> 类型之外还有 <code>Animation&lt;Color&gt;</code> 或者 <code>Animation&lt;Size&gt;</code> 等。</p><pre><code class="dart">abstract class Animation&lt;T&gt; extends Listenable implements ValueListenable&lt;T&gt; {
+  /// ...
+}</code></pre><p><code>AnimationController</code></p><p>带有控制方法的 <code>Animation</code> 对象，用来控制动画的启动，暂停，结束，设定动画运行时间等。</p><pre><code class="dart">class AnimationController extends Animation&lt;double&gt;
+  with AnimationEagerListenerMixin, AnimationLocalListenersMixin, AnimationLocalStatusListenersMixin {
+  /// ...
+}
+
+AnimationController controller = AnimationController(
+  vsync: this,
+  duration: Duration(seconds: 10),
+);</code></pre><p><code>Tween</code></p><p>用来生成不同类型和范围的动画取值。</p><pre><code class="dart">class Tween&lt;T extends dynamic&gt; extends Animatable&lt;T&gt; {
+  Tween({ this.begin, this.end });
+  /// ...
+}
+
+// double 类型
+Tween&lt;double&gt; tween = Tween&lt;double&gt;(begin: -200, end: 200);
+
+// color 类型
+ColorTween colorTween = ColorTween(begin: Colors.blue, end: Colors.yellow);
+
+// border radius 类型
+BorderRadiusTween radiusTween = BorderRadiusTween(
+  begin: BorderRadius.circular(0.0),
+  end: BorderRadius.circular(150.0),
+);</code></pre><p><code>Curve</code></p><p>Flutter 动画的默认动画过程是匀速的，使用 <code>CurvedAnimation</code> 可以将时间曲线定义为非线性曲线。</p><pre><code class="dart">class CurvedAnimation extends Animation&lt;double&gt; with AnimationWithParentMixin&lt;double&gt; {
+  /// ...
+}
+
+Animation animation = CurvedAnimation(parent: controller, curve: Curves.easeIn);</code></pre><p><code>Ticker</code></p><p><code>Ticker</code> 用来添加每次屏幕刷新的回调函数 <code>TickerCallback</code>，每次屏幕刷新都会调用。类似于 Web 里面的 <code>requestAnimationFrame</code> 方法。</p><pre><code class="dart">class Ticker {
+  /// ...
+}
+
+Ticker ticker = Ticker(callback);</code></pre><h2 id="隐式动画"><a href="#隐式动画" class="headerlink" title="隐式动画"></a>隐式动画</h2><p>隐式动画使用 Flutter 框架内置的动画部件创建，通过设置动画的起始值和最终值来触发。当使用 <code>setState</code> 方法改变部件的动画属性值时，框架会自动计算出一个从旧值过渡到新值的动画。</p><p>比如 <code>AnimatedOpacity</code> 部件，改变它的 <code>opacity</code> 值就可以触发动画。</p><img src="./images/flutter-animation-from-zero/opacity-toggle.gif" alt="opacity-toggle" style="width:240px" width="240"><pre><code class="dart">import &#39;package:flutter/material.dart&#39;;
+
+class OpacityChangePage extends StatefulWidget {
+  @override
+  _OpacityChangePageState createState() =&gt; _OpacityChangePageState();
+}
+
+class _OpacityChangePageState extends State&lt;OpacityChangePage&gt; {
+  double _opacity = 1.0;
+
+  // 改变目标值
+  void _toggle() {
+    _opacity = _opacity &gt; 0 ? 0.0 : 1.0;
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(&#39;隐式动画&#39;)),
+      body: Center(
+        child: AnimatedOpacity(
+          // 传入目标值
+          opacity: _opacity,
+          duration: Duration(seconds: 1),
+          child: Container(
+            width: 200,
+            height: 200,
+            color: Colors.blue,
+          ),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _toggle,
+        child: Icon(Icons.play_arrow),
+      ),
+    );
+  }
+}
+</code></pre><p>除了 <code>AnimatedOpacity</code> 外，还有其他的内置隐式动画部件如：<code>AnimatedContainer</code>, <code>AnimatedPadding</code>, <code>AnimatedPositioned</code>, <code>AnimatedSwitcher</code>， <code>AnimatedAlign</code> 等。</p><h2 id="显式动画"><a href="#显式动画" class="headerlink" title="显式动画"></a>显式动画</h2><p>显式动画指的是需要手动设置动画的时间，运动曲线，取值范围的动画。将值传递给动画部件如: <code>RotationTransition</code>，最后使用一个<code>AnimationController</code> 控制动画的开始和结束。</p><img src="./images/flutter-animation-from-zero/explicit-animation.gif" alt="explicit-animation" style="width:240px" width="240"><pre><code class="dart">import &#39;dart:math&#39;;
+import &#39;package:flutter/material.dart&#39;;
+
+class RotationAinmationPage extends StatefulWidget {
+  @override
+  _RotationAinmationPageState createState() =&gt; _RotationAinmationPageState();
+}
+
+class _RotationAinmationPageState extends State&lt;RotationAinmationPage&gt;
+    with SingleTickerProviderStateMixin {
+  AnimationController _controller;
+  Animation&lt;double&gt; _turns;
+  bool _playing = false;
+
+  // 控制动画运行状态
+  void _toggle() {
+    if (_playing) {
+      _playing = false;
+      _controller.stop();
+    } else {
+      _controller.forward()..whenComplete(() =&gt; _controller.reverse());
+      _playing = true;
+    }
+    setState(() {});
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // 初始化动画控制器，设置动画时间
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(seconds: 10),
+    );
+
+    // 设置动画取值范围和时间曲线
+    _turns = Tween(begin: 0.0, end: pi * 2).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
+    );
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _controller.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(&#39;显示动画&#39;)),
+      body: Center(
+        child: RotationTransition(
+          // 传入动画值
+          turns: _turns,
+          child: Container(
+            width: 200,
+            height: 200,
+            child: Image.asset(
+              &#39;assets/images/fan.png&#39;,
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _toggle,
+        child: Icon(_playing ? Icons.pause : Icons.play_arrow),
+      ),
+    );
+  }
+}
+</code></pre><p>除了 <code>RotationTransition</code> 外，还有其他的显示动画部件如：<code>FadeTransition</code>, <code>ScaleTransition</code>, <code>SizeTransition</code>, <code>SlideTransition</code> 等。</p><h2 id="Hero-动画"><a href="#Hero-动画" class="headerlink" title="Hero 动画"></a>Hero 动画</h2><p>Hero 动画指的是在页面切换时一个元素从旧页面运动到新页面的动画。Hero 动画需要使用两个 <code>Hero</code> 控件实现：一个用来在旧页面中，另一个在新页面。两个 <code>Hero</code> 控件需要使用相同的 <code>tag</code> 属性，并且不能与其他<code>tag</code>重复。</p><img src="./images/flutter-animation-from-zero/hero-animation.gif" alt="hero-animation" style="width:240px" width="240"><pre><code class="dart">// 页面 1
+import &#39;package:flutter/material.dart&#39;;
+
+import &#39;hero_animation_page2.dart&#39;;
+
+String cake1 = &#39;assets/images/cake01.jpg&#39;;
+String cake2 = &#39;assets/images/cake02.jpg&#39;;
+
+class HeroAnimationPage1 extends StatelessWidget {
+  GestureDetector buildRowItem(context, String image) {
+    return GestureDetector(
+      onTap: () {
+        // 跳转到页面 2
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (ctx) {
+            return HeroAnimationPage2(image: image);
+          }),
+        );
+      },
+      child: Container(
+        width: 100,
+        height: 100,
+        child: Hero(
+          // 设置 Hero 的 tag 属性
+          tag: image,
+          child: ClipOval(child: Image.asset(image)),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(&#39;页面 1&#39;)),
+      body: Column(
+        children: &lt;Widget&gt;[
+          SizedBox(height: 40.0),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: &lt;Widget&gt;[
+              buildRowItem(context, cake1),
+              buildRowItem(context, cake2),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// 页面 2
+import &#39;package:flutter/material.dart&#39;;
+
+class HeroAnimationPage2 extends StatelessWidget {
+  final String image;
+
+  const HeroAnimationPage2({@required this.image});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: CustomScrollView(
+        slivers: &lt;Widget&gt;[
+          SliverAppBar(
+            expandedHeight: 400.0,
+            title: Text(&#39;页面 2&#39;),
+            backgroundColor: Colors.grey[200],
+            flexibleSpace: FlexibleSpaceBar(
+              collapseMode: CollapseMode.parallax,
+              background: Hero(
+                // 使用从页面 1 传入的 tag 值
+                tag: image,
+                child: Container(
+                  decoration: BoxDecoration(
+                    image: DecorationImage(
+                      image: AssetImage(image),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          SliverList(
+            delegate: SliverChildListDelegate(
+              &lt;Widget&gt;[
+                Container(height: 600.0, color: Colors.grey[200]),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+</code></pre><h2 id="交织动画"><a href="#交织动画" class="headerlink" title="交织动画"></a>交织动画</h2><p>交织动画是由一系列的小动画组成的动画。每个小动画可以是连续或间断的，也可以相互重叠。其关键点在于使用 <code>Interval</code> 部件给每个小动画设置一个时间间隔，以及为每个动画的设置一个取值范围 <code>Tween</code>，最后使用一个 <code>AnimationController</code> 控制总体的动画状态。</p><p><code>Interval</code> 继承至 <code>Curve</code> 类，通过设置属性 <code>begin</code> 和 <code>end</code> 来确定这个小动画的运行范围。</p><pre><code class="dart">class Interval extends Curve {
+  /// ...
+
+  /// 动画起始点
+  final double begin;
+  /// 动画结束点
+  final double end;
+  /// 动画缓动曲线
+  final Curve curve;
+
+  /// ...
+}
+</code></pre><img src="./images/flutter-animation-from-zero/staggered-animation.gif" alt="staggered-animation" style="width:240px" width="240"><p>这是一个由 5 个小动画组成的交织动画，宽度，高度，颜色，圆角，边框，每个动画都有自己的动画区间。</p><p><img src="./images/flutter-animation-from-zero/staggered-animation-timeline.png" alt="staggered-animation-timeline"></p><pre><code class="dart">import &#39;package:flutter/material.dart&#39;;
+
+class StaggeredAnimationPage extends StatefulWidget {
+  @override
+  _StaggeredAnimationPageState createState() =&gt; _StaggeredAnimationPageState();
+}
+
+class _StaggeredAnimationPageState extends State&lt;StaggeredAnimationPage&gt;
+    with SingleTickerProviderStateMixin {
+  AnimationController _controller;
+  Animation&lt;double&gt; _width;
+  Animation&lt;double&gt; _height;
+  Animation&lt;Color&gt; _color;
+  Animation&lt;double&gt; _border;
+  Animation&lt;BorderRadius&gt; _borderRadius;
+
+  void _play() {
+    if (_controller.isCompleted) {
+      _controller.reverse();
+    } else {
+      _controller.forward();
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(seconds: 5),
+    );
+
+    _width = Tween&lt;double&gt;(
+      begin: 100,
+      end: 300,
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Interval(
+          0.0,
+          0.2,
+          curve: Curves.ease,
+        ),
+      ),
+    );
+
+    _height = Tween&lt;double&gt;(
+      begin: 100,
+      end: 300,
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Interval(
+          0.2,
+          0.4,
+          curve: Curves.ease,
+        ),
+      ),
+    );
+
+    _color = ColorTween(
+      begin: Colors.blue,
+      end: Colors.yellow,
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Interval(
+          0.4,
+          0.6,
+          curve: Curves.ease,
+        ),
+      ),
+    );
+
+    _borderRadius = BorderRadiusTween(
+      begin: BorderRadius.circular(0.0),
+      end: BorderRadius.circular(150.0),
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Interval(
+          0.6,
+          0.8,
+          curve: Curves.ease,
+        ),
+      ),
+    );
+
+    _border = Tween&lt;double&gt;(
+      begin: 0,
+      end: 25,
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Interval(0.8, 1.0),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(&#39;交织动画&#39;)),
+      body: Center(
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (BuildContext context, Widget child) {
+            return Container(
+              width: _width.value,
+              height: _height.value,
+              decoration: BoxDecoration(
+                color: _color.value,
+                borderRadius: _borderRadius.value,
+                border: Border.all(
+                  width: _border.value,
+                  color: Colors.orange,
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _play,
+        child: Icon(Icons.refresh),
+      ),
+    );
+  }
+}
+</code></pre><h2 id="物理动画"><a href="#物理动画" class="headerlink" title="物理动画"></a>物理动画</h2><p>物理动画是一种模拟现实世界物体运动的动画。需要建立物体的运动模型，以一个物体下落为例，这个运动受到物体的下落高度，重力加速度，地面的反作用力等因素的影响。</p><img src="./images/flutter-animation-from-zero/throw-animation.gif" alt="throw-animation" style="width:240px" width="240"><pre><code class="dart">import &#39;package:flutter/material.dart&#39;;
+import &#39;package:flutter/scheduler.dart&#39;;
+
+class ThrowAnimationPage extends StatefulWidget {
+  @override
+  _ThrowAnimationPageState createState() =&gt; _ThrowAnimationPageState();
+}
+
+class _ThrowAnimationPageState extends State&lt;ThrowAnimationPage&gt; {
+  // 球心高度
+  double y = 70.0;
+  // Y 轴速度
+  double vy = -10.0;
+  // 重力
+  double gravity = 0.1;
+  // 地面反弹力
+  double bounce = -0.5;
+  // 球的半径
+  double radius = 50.0;
+  // 地面高度
+  final double height = 700;
+
+  // 下落方法
+  void _fall(_) {
+    y += vy;
+    vy += gravity;
+
+    // 如果球体接触到地面，根据地面反弹力改变球体的 Y 轴速度
+    if (y + radius &gt; height) {
+      y = height - radius;
+      vy *= bounce;
+    } else if (y - radius &lt; 0) {
+      y = 0 + radius;
+      vy *= bounce;
+    }
+
+    setState(() {});
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // 使用一个 Ticker 在每次更新界面时运行球体下落方法
+    Ticker(_fall)..start();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    double screenWidth = MediaQuery.of(context).size.width;
+
+    return Scaffold(
+      appBar: AppBar(title: Text(&#39;物理动画&#39;)),
+      body: Column(
+        children: &lt;Widget&gt;[
+          Container(
+            height: height,
+            child: Stack(
+              children: &lt;Widget&gt;[
+                Positioned(
+                  top: y - radius,
+                  left: screenWidth / 2 - radius,
+                  child: Container(
+                    width: radius * 2,
+                    height: radius * 2,
+                    decoration: BoxDecoration(
+                      color: Colors.blue,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(child: Container(color: Colors.blue)),
+        ],
+      ),
+    );
+  }
+}
+</code></pre><h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>本文介绍了 Flutter 中多种类型的动画，分别是</p><ul><li>隐式动画</li><li>显式动画</li><li>Hero 动画</li><li>交织动画</li><li>基于物理的动画</li></ul><p>一个动画的主要因素有</p><ul><li><code>Animation</code> 动画对象</li><li><code>AnimationController</code> 动画控制器</li><li><code>Tween</code> 动画取值范围</li><li><code>Curve</code> 动画运动曲线</li></ul><p>Flutter 动画基于类型化的 <code>Animation</code> 对象，<code>Widgets</code> 通过读取动画对象的当前值和监听状态变化重新运行 <code>build</code> 函数，不断变化 UI 形成动画效果。</p><h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p><a href="https://medium.com/flutter/flutter-animation-basics-with-implicit-animations-95db481c5916" target="_blank" rel="noopener">Flutter animation basics with implicit animations</a></p><p><a href="https://medium.com/flutter/directional-animations-with-built-in-explicit-animations-3e7c5e6fbbd7" target="_blank" rel="noopener">Directional animations with built-in explicit animations</a></p><p><a href="https://flutter.cn/docs/development/ui/animations" target="_blank" rel="noopener">动画效果介绍</a></p><p><a href="https://book.flutterchina.club/chapter9/intro.html" target="_blank" rel="noopener">Flutter动画简介</a></p><p><a href="https://flutter.cn/docs/development/ui/animations/tutorial" target="_blank" rel="noopener">在 Flutter 应用里实现动画效果</a></p></section><hr><p class="article-license"><span>本文采用<a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode.zh-Hans" target="_blank">知识共享署名-非商业性使用-相同方式共享 4.0 国际许可协议</a>进行许可 </span><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode.zh-Hans" target="_blank"><img class="license-img" alt="知识共享许可协议" src="https://img.shields.io/badge/license-BY--NC--SA%204.0-green"></a></p></article><section class="prev-next card slide-in-right"><a href="/post/2020/05/07/flutter-animation-decision/" class="link prev" title="选择适合的 Flutter 动画控件"><span class="hover-underline-animation">&larr; 选择适合的 Flutter 动画控件</span> </a><a href="/post/2020/04/13/flutter-stream/" class="link next" title="在 Flutter 里使用 Stream"><span class="hover-underline-animation">在 Flutter 里使用 Stream &rarr;</span></a></section><section class="article-toc"><div class="card"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Flutter-中的动画"><span class="toc-text">Flutter 中的动画</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#基础概念"><span class="toc-text">基础概念</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#隐式动画"><span class="toc-text">隐式动画</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#显式动画"><span class="toc-text">显式动画</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Hero-动画"><span class="toc-text">Hero 动画</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#交织动画"><span class="toc-text">交织动画</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#物理动画"><span class="toc-text">物理动画</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-text">总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考"><span class="toc-text">参考</span></a></li></ol></div><div class="card uk-inline-clip uk-padding-remove"><img class="zanshang-img" src="/zanshang.jpg"></div></section><section class="article slide-in-right"><div class="loader" id="loader"><svg viewBox="0 0 50 50"><circle class="ring" cx="25" cy="25" r="20"></circle><circle class="ball" cx="25" cy="5" r="3.5"></circle></svg></div><div class="comment" id="utteranc"></div><noscript>Please activate JavaScript for normal use of comments</noscript></section><a class="card back-to-top" id="backTop">&UpArrow;</a><div id="player"></div></main><script>window.COLD_STONE={root:"/",author:"ColdStone",gaid:"UA-119658292-2",repo:"xrr2016/blog"}</script><script src="https://cdn.bootcss.com/highlight.js/9.15.10/highlight.min.js"></script><script>hljs.initHighlightingOnLoad()</script><script src="https://cdnjs.cloudflare.com/ajax/libs/aplayer/1.10.1/APlayer.min.js" integrity="sha256-6Y7CJDaltoeNgk+ZftgCD9jLgmGv4xKUo8nQ0HgAwVo=" crossorigin="anonymous"></script><script>const ap = new APlayer({
+		container: document.getElementById('player'),
+		fixed: true,
+		audio: [{
+				name: 'DNF·风一样的勇士编钟国乐版',
+				artist: '湖北省博物馆编钟乐团',
+				url: './audios/dnf.mp3',
+				cover: './images/cover.jpg',
+			},
+			{
+				name: 'さくら～あなたに出会えてよかった～',
+				artist: 'Real Street Performance',
+				url: './audios/dnf.mp3',
+				cover: './images/cover2.jpg',
+			},
+			// {
+			// name: '我不配',
+			// artist: '周杰伦',
+			// url: './audios/dnf.mp3',
+			// cover: './images/cover3.jpg',
+			// }
+		]
+	});</script><script src="/scripts/busuanzi.js" referrerpolicy="origin"></script><script src="/scripts/cold-stone.js"></script><script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5eeae335b32b6f13"></script><script src="//www.googletagmanager.com/gtag/js?id=UA-119658292-2"></script><script>function gtag(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],gtag("js",new Date),gtag("config",window.COLD_STONE.gaid)</script></body></html>

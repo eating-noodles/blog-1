@@ -1,0 +1,332 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="X-UA-Compatible" content="chrome=1"><meta name="renderer" content="webkit|ie-comp|ie-stand"><meta name="referrer" content="no-referrer"><meta name="theme-color" content="#333333"><meta name="mobile-web-app-capable" content="yes"><meta name="google" content="notranslate"><meta name="format-detection" content="telephone=no"><meta name="keyword" content="冷石, 前端, 面试，Web, Js, CSS, Node.js, Frontend, Flutter, Docker, Dart, Mysql, Egg.js"><meta name="description" content="孑然一身，傲立于世"><title>使用 Flutter 绘制图表（一）柱状图📊 - 冷石的博客</title><base href="/"><link rel="preconnect" href="//cdn.bootcss.com"><link rel="manifest" href="/manifest.json"><link rel="shortcut icon" href="/icons/icon-72x72.png"><link rel="apple-touch-icon" href="/icons/icon-192x192.png"><link href="https://cdn.bootcss.com/highlight.js/9.15.10/styles/atom-one-light.min.css" rel="stylesheet"><link href="https://cdn.bootcss.com/highlight.js/9.15.10/styles/atom-one-dark.min.css" rel="stylesheet" media="screen and (prefers-color-scheme:dark)"><link href="https://cdn.bootcss.com/uikit/3.2.0/css/uikit.min.css" rel="stylesheet"><script src="https://cdn.bootcss.com/uikit/3.2.0/js/uikit.min.js" async></script><script src="https://cdn.bootcss.com/uikit/3.2.0/js/uikit-icons.min.js" async></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aplayer/1.10.1/APlayer.min.css" integrity="sha256-uqQQGnDcmRKvhKwc5Vm4XT1GQ2oV6t1U0NR2N9tV+BQ=" crossorigin="anonymous"><link rel="stylesheet" href="/styles/cold-stone.css"><noscript><p class="text-center">你的浏览器还没开启 Javascript 功能！</p></noscript><meta name="generator" content="Hexo 4.0.0"></head><body><header class="header" uk-sticky="top: 100; animation: uk-animation-slide-top; bottom: #sticky-on-scroll-up"><nav class="wrapper header-content"><div class="nav-overlay uk-navbar-left"><h1 class="title nav-list-item uk-logo" data-link="/"><a href="/" data-link="/">冷石</a></h1><ul class="nav-list"><li class="nav-list-item" data-link="/activity/"><a class="nav-list-link" href="/activity">动态</a></li><li class="nav-list-item" data-link="/categories/"><a class="nav-list-link" href="/categories">分类</a></li><li class="nav-list-item" data-link="/about/"><a class="nav-list-link" href="/about/">关于</a></li></ul></div><div class="uk-navbar-right translate-x"><a class="uk-navbar-toggle" href="#modal-full" uk-search-icon uk-toggle></a></div></nav><div class="header-bar"></div></header><div id="modal-full" class="uk-modal-full uk-modal" uk-modal><div class="uk-modal-dialog uk-flex uk-flex-center uk-flex-middle" uk-height-viewport><button class="uk-modal-close-full" type="button" uk-close></button><form class="uk-search uk-search-large search-form" action="//google.com/search" method="get" accept-charset="UTF-8" target="_blank"><input class="uk-search-input search-form-input" type="search" name="q" placeholder="搜索" autofocus autocomplete="false"> <input type="hidden" name="sitesearch" value="https://coldstone.fun"></form></div></div><main class="main wrapper"><article class="article slide-in-right uk-article"><section class="article-header"><h1 class="article-title uk-article-title">使用 Flutter 绘制图表（一）柱状图📊</h1><p class="article-meta uk-article-meta"><span class="meta-info"><span>最后更新&#58;<time class="post-time" datetime="2020-06-18">2020-06-18</time> </span><span>阅读时间&#58; 9 min</span> <span class="hide" id="busuanzi_container_page_pv">阅读量&#58; <span id="busuanzi_value_page_pv"></span></span></span></p></section><section class="article-content"><h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>本文讲解如何使用 <a href="https://flutter.dev/" target="_blank" rel="noopener">Flutter</a> （Google 开源的 UI 工具包，帮助开发者通过一套代码库高效构建多平台精美应用，支持移动、Web、桌面和嵌入式平台） 绘制一个带有动画效果的柱状图表，最终效果如下图。</p><img src="./images/flutter-bar-chart/bar-chart.gif" width="568" style="width:260px"><p>要绘制这样的图表普通的 Widget 难以实现，这时就需要 <code>CustomPaint</code> 和 <code>CustomPainter</code> 出场了，它们类似于 Web 里面的 <code>&lt;canvas&gt;</code> 元素，<code>CustomPaint</code> 提供了一个绘制区域，而 <code>CustomPainter</code> 拥有具体的绘制方法。</p><h2 id="CustomPaint-是什么"><a href="#CustomPaint-是什么" class="headerlink" title="CustomPaint 是什么"></a>CustomPaint 是什么</h2><p><code>CustomPaint</code> 是用来提供画布的控件，它使用传入画笔 <code>painter</code> 在 <code>child</code> 控件后面绘制图形, ，<code>foregroundPainter</code> 画笔绘制在 <code>child</code> 控件之前。<code>size</code> 属性控制画布的大小，假如定义了子控件 <code>child</code>，那么画布的大小将由子控件的大小决定，<code>size</code> 属性被忽略。</p><pre><code class="dart">class CustomPaint extends SingleChildRenderObjectWidget {
+  const CustomPaint({
+    Key key,
+    this.painter,
+    this.foregroundPainter,
+    this.size = Size.zero,
+    this.isComplex = false,
+    this.willChange = false,
+    Widget child,
+  })
+}</code></pre><p>而 <code>CustomPainter</code> 是实现绘制图形的控件，要在画布上绘制图形需要实现它的 <code>paint</code> 方法。<code>paint</code> 方法有两个参数，<code>Canvas canvas</code> 和 <code>Size size</code>。<code>Size</code> 对象表示画布的尺寸，<code>Canvas</code> 对象上是具体的绘制图形的方法。</p><pre><code class="dart">abstract class CustomPainter extends Listenable {
+  void paint(Canvas canvas, Size size);
+
+  bool shouldRepaint(covariant CustomPainter oldDelegate);
+}</code></pre><p><code>Canvas canvas</code> 对象主要的绘制图形方法有</p><table><thead><tr><th align="left">方法名</th><th align="left">参数</th><th align="left">效果</th></tr></thead><tbody><tr><td align="left"><code>drawColor</code></td><td align="left"><code>Color color</code>, <code>BlendMode blendMode</code></td><td align="left">绘制颜色到画布上</td></tr><tr><td align="left"><code>drawLine</code></td><td align="left"><code>Offset p1</code>, <code>Offset p2</code>, <code>Paint paint</code></td><td align="left">两点之间画线</td></tr><tr><td align="left"><code>drawPaint</code></td><td align="left"><code>Paint paint</code></td><td align="left">使用 [Paint] 填充画布</td></tr><tr><td align="left"><code>drawRect</code></td><td align="left"><code>Rect rect</code>, <code>Paint paint</code></td><td align="left">绘制矩形</td></tr><tr><td align="left"><code>drawRRect</code></td><td align="left"><code>RRect rrect</code>, <code>Paint paint</code></td><td align="left">绘制带圆角的矩形</td></tr><tr><td align="left"><code>drawOval</code></td><td align="left"><code>Rect rect</code>, <code>Paint paint</code></td><td align="left">绘制椭圆</td></tr><tr><td align="left"><code>drawCircle</code></td><td align="left"><code>Offset c</code>, <code>double radius</code>, <code>Paint paint</code></td><td align="left">绘制圆形</td></tr><tr><td align="left"><code>drawArc</code></td><td align="left"><code>Rect rect</code>, <code>double startAngle</code>, <code>double sweepAngle</code>, <code>bool useCenter</code>, <code>Paint paint</code></td><td align="left">绘制弧形</td></tr><tr><td align="left"><code>drawPath</code></td><td align="left"><code>Path path</code>, <code>Paint paint</code></td><td align="left">绘制路径</td></tr><tr><td align="left"><code>drawImage</code></td><td align="left"><code>Image image</code>, <code>Offset p</code>, <code>Paint paint</code></td><td align="left">绘制图像</td></tr><tr><td align="left"><code>drawPoints</code></td><td align="left"><code>PointMode pointMode</code>, <code>List&lt;Offset&gt; points</code>, <code>Paint paint</code></td><td align="left">绘制多个点</td></tr></tbody></table><p>要将图形绘制到画布上需要先创建一个继承至 <code>CustomPainter</code> 的自定义画笔，例如绘制一个矩形需要实现一个绘制矩形的画笔 <code>RectanglePainter</code>，然后在画布 <code>CustomPaint</code> 上应用它。</p><pre><code class="dart">class RectanglePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    // 定义一个矩形
+    final Rect rect = Rect.fromLTWH(50.0, 50.0, 100.0, 100.0);
+    // 指定绘制的样式
+    final Paint paint = Paint()
+      ..color = Colors.orange
+      ..strokeWidth = 4.0
+      ..style = PaintingStyle.stroke
+      ..isAntiAlias = true;
+
+    // 使用 drawRect 绘制矩形
+    canvas.drawRect(rect, paint);
+  }
+
+  @override
+  bool shouldRepaint(RectanglePainter oldDelegate) =&gt; false;
+}
+
+class Rectangle extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: CustomPaint(
+        // 使用 RectanglePainter 在画布上绘制
+        painter: RectanglePainter(),
+        child: Container(
+          width: 300,
+          height: 300,
+          decoration: BoxDecoration(
+            border: Border.all(
+              width: 1.0,
+              color: Colors.grey[300],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}</code></pre><p>效果如图</p><img src="./images/flutter-bar-chart/rect.png" width="520" style="width:260px"><h2 id="绘制柱状图表"><a href="#绘制柱状图表" class="headerlink" title="绘制柱状图表"></a>绘制柱状图表</h2><p>介绍完毕，下面开始绘制柱状图表，第一步创建 <code>BarChart</code> 控件代表柱状图，它有两个构造参数一个是 <code>data</code> 用来接收图表数据，以及 <code>xAxis</code> 表示图表横轴标识。</p><pre><code class="dart">class BarChart extends StatefulWidget {
+  final List&lt;double&gt; data;
+  final List&lt;String&gt; xAxis;
+
+  const BarChart({
+    @required this.data,
+    @required this.xAxis,
+  });
+
+  @override
+  _BarChartState createState() =&gt; _BarChartState();
+}
+
+class _BarChartState extends State&lt;BarChart&gt; with TickerProviderStateMixin {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        CustomPaint(
+          painter: BarChartPainter(
+            datas: widget.data,
+            xAxis: widget.xAxis,
+          ),
+          child: Container(width: 300, height: 300),
+        ),
+      ],
+    );
+  }
+}</code></pre><p>然后创建一个用来绘制的自定义画笔 <code>BarChartPainter</code>。</p><pre><code class="dart">class BarChartPainter extends CustomPainter {
+  final List&lt;double&gt; datas;
+  final List&lt;String&gt; xAxis;
+
+  BarChartPainter({
+    @required this.xAxis,
+    @required this.datas,
+  });
+
+   @override
+  void paint(Canvas canvas, Size size) {
+    // TODO
+  }
+
+  @override
+  bool shouldRepaint(BarChartPainter oldDelegate) =&gt; true;
+
+  @override
+  bool shouldRebuildSemantics(BarChartPainter oldDelegate) =&gt; false;
+}
+</code></pre><h3 id="绘制坐标轴"><a href="#绘制坐标轴" class="headerlink" title="绘制坐标轴"></a>绘制坐标轴</h3><p>在 <code>BarChartPainter</code> 上定义一个 <code>_drawAxis</code> 方法用于绘制横坐标轴，使用一个由左上，左下，右下三个点控制的 <code>Path</code> 路径绘制。</p><pre><code class="dart">void _drawAxis(Canvas canvas, Size size) {
+  final double sw = size.width;
+  final double sh = size.height;
+
+  // 使用 Paint 定义路径的样式
+  final Paint paint = Paint()
+    ..color = Colors.black87
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1.0;
+
+  // 使用 Path 定义绘制的路径，从画布的左上角到左下角在到右下角
+  final Path path = Path()
+    ..moveTo(0, 0)
+    ..lineTo(0, sh)
+    ..lineTo(sw, sh);
+
+  // 使用 drawPath 方法绘制路径
+  canvas.drawPath(path, paint);
+}
+
+@override
+void paint(Canvas canvas, Size size) {
+  _drawAxis(canvas, size);
+}</code></pre><p>效果如下</p><img src="./images/flutter-bar-chart/chart-axis.png" width="508" style="width:260px" alt="chart-axis"><h3 id="绘制标识"><a href="#绘制标识" class="headerlink" title="绘制标识"></a>绘制标识</h3><p>在 <code>BarChartPainter</code> 上定义一个 <code>_drawLabels</code> 方法绘制纵轴标识。</p><pre><code class="dart">void _drawLabels(Canvas canvas, Size size) {
+  final double gap = 50.0;
+  final double sh = size.height;
+  final List&lt;double&gt; yAxisLabels = [];
+
+  Paint paint = Paint()
+    ..color = Colors.black87
+    ..strokeWidth = 2.0;
+
+  // 使用 50.0 为间隔绘制比传入数据多一个的标识
+  for (int i = 0; i &lt;= datas.length; i++) {
+    yAxisLabels.add(gap * i);
+  }
+
+  yAxisLabels.asMap().forEach(
+    (index, label) {
+      // 标识的高度为画布高度减去标识的值
+      final double top = sh - label;
+      final rect = Rect.fromLTWH(0, top, 4, 1);
+      final Offset textOffset = Offset(
+        0 - labelFontSize * 3,
+        top - labelFontSize / 2,
+      );
+
+      // 绘制 Y 轴右边的线条
+      canvas.drawRect(rect, paint);
+
+      // 绘制文字需要用 `TextPainter`，最后调用 paint 方法绘制文字
+      TextPainter(
+        text: TextSpan(
+          text: label.toStringAsFixed(0),
+          style: TextStyle(fontSize: labelFontSize, color: Colors.black87),
+        ),
+        textAlign: TextAlign.right,
+        textDirection: TextDirection.ltr,
+        textWidthBasis: TextWidthBasis.longestLine,
+      )
+        ..layout(minWidth: 0, maxWidth: 24)
+        ..paint(canvas, textOffset);
+    },
+  );
+}
+
+@override
+void paint(Canvas canvas, Size size) {
+  _drawAxis(canvas, size);
+  _drawLabels(canvas, size);
+}
+</code></pre><p>效果如下</p><img src="./images/flutter-bar-chart/chart-yaxis.png" width="520" style="width:260px" alt="chart-yaxis"><h3 id="绘制数据矩形"><a href="#绘制数据矩形" class="headerlink" title="绘制数据矩形"></a>绘制数据矩形</h3><p>然后定义一个 <code>_darwBars</code> 方法将具体矩形和横轴标识绘制出来。</p><pre><code class="dart">List&lt;Color&gt; colors = [
+  Color(0xff8e43e7),
+  Color(0xffff4f81),
+  Color(0xff1cc7d0),
+  Color(0xff00aeff),
+  Color(0xff3369e7),
+  Color(0xffb84592),
+  Color(0xff2dde98),
+  Color(0xffff6c5f),
+  Color(0xff003666),
+  Color(0xffffc168),
+  Color(0xff050f2c),
+];
+
+void _darwBars(Canvas canvas, Size size) {
+  final sh = size.height;
+  final paint = Paint()..style = PaintingStyle.fill;
+
+  for (int i = 0; i &lt; datas.length; i++) {
+    // 每个矩形使用预设的 colors 数组里面的颜色
+    paint.color = colors[i];
+    final double textFontSize = 14.0;
+    final double data = datas[i];
+    // 矩形的上边缘为画布高度减去数据值
+    final double top = sh - data;
+    // 矩形的左边缘为当前索引值乘以矩形宽度加上矩形之间的间距
+    final double left = i * _barWidth + (i * _barGap) + _barGap;
+
+    // 使用 Rect.fromLTWH 方法创建要绘制的矩形
+    final rect = Rect.fromLTWH(left, top, _barWidth, data);
+    // 使用 drawRect 方法绘制矩形
+    canvas.drawRect(rect, paint);
+
+    final offset = Offset(
+      left + _barWidth / 2 - textFontSize * 1.2,
+      top - textFontSize * 2,
+    );
+    // 使用 TextPainter 绘制矩形上放的数值
+    TextPainter(
+      text: TextSpan(
+        text: data.toStringAsFixed(1),
+        style: TextStyle(fontSize: textFontSize, color: paint.color),
+      ),
+      textAlign: TextAlign.center,
+      textDirection: TextDirection.ltr,
+    )
+      ..layout(
+        minWidth: 0,
+        maxWidth: textFontSize * data.toString().length,
+      )
+      ..paint(canvas, offset);
+
+    final xData = xAxis[i];
+    final xOffset = Offset(left + _barWidth / 2 - textFontSize, sh + 12);
+    // 绘制横轴标识
+    TextPainter(
+      textAlign: TextAlign.center,
+      text: TextSpan(
+        text: &#39;$xData&#39;,
+        style: TextStyle(fontSize: 12, color: Colors.black87),
+      ),
+      textDirection: TextDirection.ltr,
+    )
+      ..layout(
+        minWidth: 0,
+        maxWidth: size.width,
+      )
+      ..paint(canvas, xOffset);
+  }
+}
+
+@override
+void paint(Canvas canvas, Size size) {
+  _drawAxis(canvas, size);
+  _drawLabels(canvas, size);
+  _darwBars(canvas, size);
+}</code></pre><p>效果如下</p><img src="./images/flutter-bar-chart/chart-data.png" width="520" style="width:260px" alt="chart-data"><h3 id="添加运动动画"><a href="#添加运动动画" class="headerlink" title="添加运动动画"></a>添加运动动画</h3><p>最后在 <code>_BarChartState</code> 里使用一个 <code>AnimationController</code> 创建柱状图运动的动画，关于动画方面的知识可以查阅 <a href="https://coldstone.fun/post/2020/04/26/flutter-animation-from-zero/">从零开始的 Flutter 动画</a> 这篇文章。</p><pre><code class="dart">class _BarChartState extends State&lt;BarChart&gt; with TickerProviderStateMixin {
+  AnimationController _controller;
+  final _animations = &lt;double&gt;[];
+
+  @override
+  void initState() {
+    super.initState();
+    double begin = 0.0;
+    List&lt;double&gt; datas = widget.data;
+    // 初始化动画控制器，并调用 forward 方法启动动画
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 3000),
+    )..forward();
+
+    for (int i = 0; i &lt; datas.length; i++) {
+      final double end = datas[i];
+      // 使用一个补间值 Tween 创建每个矩形的动画值
+      final Tween&lt;double&gt; tween = Tween(begin: begin, end: end);
+      // 初始化数组里面的值
+      _animations.add(begin);
+
+      // 创建补间动画
+      Animation&lt;double&gt; animation = tween.animate(
+        CurvedAnimation(
+          parent: _controller,
+          curve: Curves.ease,
+        ),
+      );
+      _controller.addListener(() {
+        // 使用 setState 更新 _animations 数组里面的动画值
+        setState(() {
+          _animations[i] = animation.value;
+        });
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        CustomPaint(
+          // 最后向 BarChartPainter 传入 _animations 数组，实现动画
+          painter: BarChartPainter(
+            datas: _animations,
+            xAxis: widget.xAxis,
+            animation: _controller,
+          ),
+          child: Container(width: 300, height: 300),
+        ),
+      ],
+    );
+  }
+}
+</code></pre><p>至此整个柱状图的绘制就完成了，传入数据即可使用 🎉🎉🎉</p><pre><code class="dart">BarChart(
+  data: [180.0, 98.0, 126.0, 64.0, 118.0],
+  xAxis: [&#39;一月&#39;, &#39;二月&#39;, &#39;三月&#39;, &#39;四月&#39;, &#39;五月&#39;],
+);</code></pre><p>完整代码地址：<a href="https://github.com/xrr2016/flutter-charts/blob/master/lib/charts/bar_chart.dart" target="_blank" rel="noopener">bar_chart.dart</a></p><h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>本文说明了什么是 <code>CustomPaint</code> 和 <code>CustomPainter</code>。以及如何使用它们绘制一个带有动画的柱状图表。</p><h2 id="附言"><a href="#附言" class="headerlink" title="附言"></a>附言</h2><p>准备写一系列关于用 Flutter 画图表的文章，用来分享这方面的知识，这篇文章是这个系列的开篇，预计一共会写 6 篇。</p><ol><li><a href="https://coldstone.fun/post/2020/05/31/flutter-bar-chart/">使用 Flutter 绘制图表（一）柱状图📊</a>（本文）</li><li>使用 Flutter 绘制图表（二）饼状图🍪</li><li>使用 Flutter 绘制图表（三）折线图📈</li><li>使用 Flutter 绘制图表（四）雷达图🎯</li><li>使用 Flutter 绘制图表（五）环状图🍩</li><li>使用 Flutter 绘制图表（六）条形图📏</li></ol></section><hr><p class="article-license"><span>本文采用<a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode.zh-Hans" target="_blank">知识共享署名-非商业性使用-相同方式共享 4.0 国际许可协议</a>进行许可 </span><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode.zh-Hans" target="_blank"><img class="license-img" alt="知识共享许可协议" src="https://img.shields.io/badge/license-BY--NC--SA%204.0-green"></a></p></article><section class="prev-next card slide-in-right"><a href="/post/2020/06/09/flutter-pie-chart/" class="link prev" title="使用 Flutter 绘制图表（二）饼状图🍪"><span class="hover-underline-animation">&larr; 使用 Flutter 绘制图表（二）饼状图🍪</span> </a><a href="/post/2020/05/07/flutter-animation-decision/" class="link next" title="选择适合的 Flutter 动画控件"><span class="hover-underline-animation">选择适合的 Flutter 动画控件 &rarr;</span></a></section><section class="article-toc"><div class="card"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#CustomPaint-是什么"><span class="toc-text">CustomPaint 是什么</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#绘制柱状图表"><span class="toc-text">绘制柱状图表</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#绘制坐标轴"><span class="toc-text">绘制坐标轴</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#绘制标识"><span class="toc-text">绘制标识</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#绘制数据矩形"><span class="toc-text">绘制数据矩形</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#添加运动动画"><span class="toc-text">添加运动动画</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-text">总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#附言"><span class="toc-text">附言</span></a></li></ol></div><div class="card uk-inline-clip uk-padding-remove"><img class="zanshang-img" src="/zanshang.jpg"></div></section><section class="article slide-in-right"><div class="loader" id="loader"><svg viewBox="0 0 50 50"><circle class="ring" cx="25" cy="25" r="20"></circle><circle class="ball" cx="25" cy="5" r="3.5"></circle></svg></div><div class="comment" id="utteranc"></div><noscript>Please activate JavaScript for normal use of comments</noscript></section><a class="card back-to-top" id="backTop">&UpArrow;</a><div id="player"></div></main><script>window.COLD_STONE={root:"/",author:"ColdStone",gaid:"UA-119658292-2",repo:"xrr2016/blog"}</script><script src="https://cdn.bootcss.com/highlight.js/9.15.10/highlight.min.js"></script><script>hljs.initHighlightingOnLoad()</script><script src="https://cdnjs.cloudflare.com/ajax/libs/aplayer/1.10.1/APlayer.min.js" integrity="sha256-6Y7CJDaltoeNgk+ZftgCD9jLgmGv4xKUo8nQ0HgAwVo=" crossorigin="anonymous"></script><script>const ap = new APlayer({
+		container: document.getElementById('player'),
+		fixed: true,
+		audio: [{
+				name: 'DNF·风一样的勇士编钟国乐版',
+				artist: '湖北省博物馆编钟乐团',
+				url: './audios/dnf.mp3',
+				cover: './images/cover.jpg',
+			},
+			{
+				name: 'さくら～あなたに出会えてよかった～',
+				artist: 'Real Street Performance',
+				url: './audios/dnf.mp3',
+				cover: './images/cover2.jpg',
+			},
+			// {
+			// name: '我不配',
+			// artist: '周杰伦',
+			// url: './audios/dnf.mp3',
+			// cover: './images/cover3.jpg',
+			// }
+		]
+	});</script><script src="/scripts/busuanzi.js" referrerpolicy="origin"></script><script src="/scripts/cold-stone.js"></script><script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5eeae335b32b6f13"></script><script src="//www.googletagmanager.com/gtag/js?id=UA-119658292-2"></script><script>function gtag(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],gtag("js",new Date),gtag("config",window.COLD_STONE.gaid)</script></body></html>

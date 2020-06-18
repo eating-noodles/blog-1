@@ -1,0 +1,482 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="X-UA-Compatible" content="chrome=1"><meta name="renderer" content="webkit|ie-comp|ie-stand"><meta name="referrer" content="no-referrer"><meta name="theme-color" content="#333333"><meta name="mobile-web-app-capable" content="yes"><meta name="google" content="notranslate"><meta name="format-detection" content="telephone=no"><meta name="keyword" content="冷石, 前端, 面试，Web, Js, CSS, Node.js, Frontend, Flutter, Docker, Dart, Mysql, Egg.js"><meta name="description" content="孑然一身，傲立于世"><title>在 Flutter 里使用 Stream - 冷石的博客</title><base href="/"><link rel="preconnect" href="//cdn.bootcss.com"><link rel="manifest" href="/manifest.json"><link rel="shortcut icon" href="/icons/icon-72x72.png"><link rel="apple-touch-icon" href="/icons/icon-192x192.png"><link href="https://cdn.bootcss.com/highlight.js/9.15.10/styles/atom-one-light.min.css" rel="stylesheet"><link href="https://cdn.bootcss.com/highlight.js/9.15.10/styles/atom-one-dark.min.css" rel="stylesheet" media="screen and (prefers-color-scheme:dark)"><link href="https://cdn.bootcss.com/uikit/3.2.0/css/uikit.min.css" rel="stylesheet"><script src="https://cdn.bootcss.com/uikit/3.2.0/js/uikit.min.js" async></script><script src="https://cdn.bootcss.com/uikit/3.2.0/js/uikit-icons.min.js" async></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aplayer/1.10.1/APlayer.min.css" integrity="sha256-uqQQGnDcmRKvhKwc5Vm4XT1GQ2oV6t1U0NR2N9tV+BQ=" crossorigin="anonymous"><link rel="stylesheet" href="/styles/cold-stone.css"><noscript><p class="text-center">你的浏览器还没开启 Javascript 功能！</p></noscript><meta name="generator" content="Hexo 4.0.0"></head><body><header class="header" uk-sticky="top: 100; animation: uk-animation-slide-top; bottom: #sticky-on-scroll-up"><nav class="wrapper header-content"><div class="nav-overlay uk-navbar-left"><h1 class="title nav-list-item uk-logo" data-link="/"><a href="/" data-link="/">冷石</a></h1><ul class="nav-list"><li class="nav-list-item" data-link="/activity/"><a class="nav-list-link" href="/activity">动态</a></li><li class="nav-list-item" data-link="/categories/"><a class="nav-list-link" href="/categories">分类</a></li><li class="nav-list-item" data-link="/about/"><a class="nav-list-link" href="/about/">关于</a></li></ul></div><div class="uk-navbar-right translate-x"><a class="uk-navbar-toggle" href="#modal-full" uk-search-icon uk-toggle></a></div></nav><div class="header-bar"></div></header><div id="modal-full" class="uk-modal-full uk-modal" uk-modal><div class="uk-modal-dialog uk-flex uk-flex-center uk-flex-middle" uk-height-viewport><button class="uk-modal-close-full" type="button" uk-close></button><form class="uk-search uk-search-large search-form" action="//google.com/search" method="get" accept-charset="UTF-8" target="_blank"><input class="uk-search-input search-form-input" type="search" name="q" placeholder="搜索" autofocus autocomplete="false"> <input type="hidden" name="sitesearch" value="https://coldstone.fun"></form></div></div><main class="main wrapper"><article class="article slide-in-right uk-article"><section class="article-header"><h1 class="article-title uk-article-title">在 Flutter 里使用 Stream</h1><p class="article-meta uk-article-meta"><span class="meta-info"><span>最后更新&#58;<time class="post-time" datetime="2020-06-18">2020-06-18</time> </span><span>阅读时间&#58; 9 min</span> <span class="hide" id="busuanzi_container_page_pv">阅读量&#58; <span id="busuanzi_value_page_pv"></span></span></span></p></section><section class="article-content"><h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在 Flutter 中有两种处理异步操作的方式 <code>Future</code> 和 <code>Stream</code>，<code>Future</code> 用于处理单个异步操作，<code>Stream</code> 用来处理连续的异步操作。比如往水杯倒水，将一个水杯倒满为一个 <code>Future</code>，连续的将多个水杯倒满就是 <code>Stream</code>。</p><p><img src="./images/flutter-stream/water-fill.png" alt="water-fill"></p><h2 id="Stream-详解"><a href="#Stream-详解" class="headerlink" title="Stream 详解"></a>Stream 详解</h2><p><code>Stream</code> 是一个抽象类，用于表示一序列异步数据的源。它是一种产生连续事件的方式，可以生成数据事件或者错误事件，以及流结束时的完成事件。</p><pre><code class="dart">abstract class Stream&lt;T&gt; {
+  Stream();
+}</code></pre><p><code>Stream</code> 分单订阅流和广播流。</p><p>单订阅流在发送完成事件之前只允许设置一个监听器，并且只有在流上设置监听器后才开始产生事件，取消监听器后将停止发送事件。即使取消了第一个监听器，也不允许在单订阅流上设置其他的监听器。广播流则允许设置多个监听器，也可以在取消上一个监听器后再次添加新的监听器。</p><p><code>Stream</code> 有同步流和异步流之分。</p><p>它们的区别在于同步流会在执行 <code>add</code>，<code>addError</code> 或 <code>close</code> 方法时立即向流的监听器 <code>StreamSubscription</code> 发送事件，而异步流总是在事件队列中的代码执行完成后在发送事件。</p><h2 id="Stream-家族"><a href="#Stream-家族" class="headerlink" title="Stream 家族"></a><code>Stream</code> 家族</h2><p><code>StreamController</code></p><p>带有控制流方法的流。 可以向它的流发送数据，错误和完成事件，也可以检查数据流是否已暂停，是否有监听器。<code>sync</code> 参数决定这个流是同步流还是异步流。</p><pre><code class="dart">abstract class StreamController&lt;T&gt; implements StreamSink&lt;T&gt; {
+  Stream&lt;T&gt; get stream;
+  /// ...
+}
+
+StreamController _streamController = StreamController(
+  onCancel: () {},
+  onListen: () {},
+  onPause: () {},
+  onResume: () {},
+  sync: false,
+);</code></pre><p><code>StreamSink</code></p><p>流事件的入口。提供 <code>add</code>，<code>addError</code>，<code>addStream</code> 方法向流发送事件。</p><pre><code class="dart">abstract class StreamSink&lt;S&gt; implements EventSink&lt;S&gt;, StreamConsumer&lt;S&gt; {
+  Future close();
+  /// ...
+  Future get done;
+}</code></pre><p><code>StreamSubscription</code></p><p>流的监听器。提供 <code>cacenl</code>、<code>pause</code>, <code>resume</code> 等方法管理。</p><pre><code class="dart">abstract class StreamSubscription&lt;T&gt; {
+  /// ...
+}
+
+StreamSubscription subscription = StreamController().stream.listen(print);
+subscription.onDone(() =&gt; print(&#39;done&#39;));</code></pre><p><code>StreamBuilder</code></p><p>使用流数据渲染 UI 界面的部件。</p><pre><code class="dart">StreamBuilder(
+  // 数据流
+  stream: stream,
+  // 初始数据
+  initialData: &#39;loading...&#39;,
+  builder: (context, AsyncSnapshot snapshot) {
+    // AsyncSnapshot 对象为数据快照，缓存了当前数据和状态
+    // snapshot.connectionState
+    // snapshot.data
+    if (snapshot.hasData) {
+      Map data = snapshot.data;
+      return Text(data),
+    }
+    return CircularProgressIndicator();
+  },
+)</code></pre><h2 id="创建-Stream"><a href="#创建-Stream" class="headerlink" title="创建 Stream"></a>创建 Stream</h2><p>在 Dart 有几种方式创建 <code>Stream</code></p><ol><li>从现有的生成一个新的流 <code>Stream</code>，使用 <code>map</code>，<code>where</code>，<code>takeWhile</code> 等方法。</li></ol><pre><code class="dart">// 整数流
+Stream&lt;int&gt; intStream = StreamController&lt;int&gt;().stream;
+// 偶数流
+Stream&lt;int&gt; evenStream = intStream.where((int n) =&gt; n.isEven);
+// 两倍流
+Stream&lt;int&gt; doubleStream = intStream.map((int n) =&gt; n * 2);
+// 数字大于 10 的流
+Stream&lt;int&gt; biggerStream = intStream.takeWhile((int n) =&gt; n &gt; 10);</code></pre><ol start="2"><li>使用 <code>async*</code> 函数。</li></ol><pre><code class="dart">Stream&lt;int&gt; countStream(int to) async* {
+  for (int i = 1; i &lt;= to; i++) {
+    yield i;
+  }
+}
+
+Stream stream = countStream(10);
+stream.listen(print);</code></pre><ol start="3"><li>使用 <code>StreamController</code>。</li></ol><pre><code class="dart">StreamController&lt;Map&gt; _streamController = StreamController(
+  onCancel: () {},
+  onListen: () {},
+  onPause: () {},
+  onResume: () {},
+  sync: false,
+);
+
+Stream _stream = _streamController.stream;</code></pre><ol start="4"><li>使用 <code>Future</code> 对象生成</li></ol><pre><code class="dart">Future&lt;int&gt; _delay(int seconds) async {
+  await Future.delayed(Duration(seconds: seconds));
+  return seconds;
+}
+
+List&lt;Future&gt; futures = [];
+for (int i = 0; i &lt; 10; i++) {
+  futures.add(_delay(3));
+}
+
+Stream _futuresStream = Stream.fromFutures(futures);</code></pre><h2 id="应用-Stream"><a href="#应用-Stream" class="headerlink" title="应用 Stream"></a>应用 Stream</h2><p><em>Stream Counter</em></p><p>把 Flutter 的默认项目改用 <code>Stream</code> 实现</p><img src="./images/flutter-stream/stream-counter.gif" width="320" style="width:320px"><pre><code class="dart">import &#39;dart:async&#39;;
+import &#39;package:flutter/material.dart&#39;;
+
+class StreamCounter extends StatefulWidget {
+  @override
+  _StreamCounterState createState() =&gt; _StreamCounterState();
+}
+
+class _StreamCounterState extends State&lt;StreamCounter&gt; {
+  // 创建一个 StreamController
+  StreamController&lt;int&gt; _counterStreamController = StreamController&lt;int&gt;(
+    onCancel: () {
+      print(&#39;cancel&#39;);
+    },
+    onListen: () {
+      print(&#39;listen&#39;);
+    },
+  );
+
+  int _counter = 0;
+  Stream _counterStream;
+  StreamSink _counterSink;
+
+  // 使用 StreamSink 向 Stream 发送事件，当 _counter 大于 9 时调用 close 方法关闭流。
+  void _incrementCounter() {
+    if (_counter &gt; 9) {
+      _counterSink.close();
+      return;
+    }
+    _counter++;
+    _counterSink.add(_counter);
+  }
+
+  // 主动关闭流
+  void _closeStream() {
+    _counterStreamController.close();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _counterSink = _counterStreamController.sink;
+    _counterStream = _counterStreamController.stream;
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _counterSink.close();
+    _counterStreamController.close();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(&#39;Stream Counter&#39;),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: &lt;Widget&gt;[
+            Text(&#39;You have pushed the button this many times:&#39;),
+            // 使用 StreamBuilder 显示和更新 UI
+            StreamBuilder&lt;int&gt;(
+              stream: _counterStream,
+              initialData: _counter,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.done) {
+                  return Text(
+                    &#39;Done&#39;,
+                    style: Theme.of(context).textTheme.bodyText2,
+                  );
+                }
+
+                int number = snapshot.data;
+                return Text(
+                  &#39;$number&#39;,
+                  style: Theme.of(context).textTheme.bodyText2,
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: &lt;Widget&gt;[
+          FloatingActionButton(
+            onPressed: _incrementCounter,
+            tooltip: &#39;Increment&#39;,
+            child: Icon(Icons.add),
+          ),
+          SizedBox(width: 24.0),
+          FloatingActionButton(
+            onPressed: _closeStream,
+            tooltip: &#39;Close&#39;,
+            child: Icon(Icons.close),
+          ),
+        ],
+      ),
+    );
+  }
+}
+</code></pre><p><em>NetWork Status</em></p><p>监听手机的网络链接状态，首先添加 <code>connectivity</code> 插件</p><pre><code class="yml">dependencies:
+  connectivity: ^0.4.8+2</code></pre><img src="./images/flutter-stream/network-status.gif" width="320" style="width:320px"><pre><code class="dart">import &#39;dart:async&#39;;
+import &#39;package:connectivity/connectivity.dart&#39;;
+import &#39;package:flutter/material.dart&#39;;
+
+class NetWorkStatus extends StatefulWidget {
+  @override
+  _NetWorkStatusState createState() =&gt; _NetWorkStatusState();
+}
+
+class _NetWorkStatusState extends State&lt;NetWorkStatus&gt; {
+  StreamController&lt;ConnectivityResult&gt; _streamController = StreamController();
+  StreamSink _streamSink;
+  Stream _stream;
+  String _result;
+
+  void _checkStatus() async {
+    final ConnectivityResult result = await Connectivity().checkConnectivity();
+
+    if (result == ConnectivityResult.mobile) {
+      _result = &#39;mobile&#39;;
+    } else if (result == ConnectivityResult.wifi) {
+      _result = &#39;wifi&#39;;
+    } else if (result == ConnectivityResult.none) {
+      _result = &#39;none&#39;;
+    }
+
+    setState(() {});
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _stream = _streamController.stream;
+    _streamSink = _streamController.sink;
+    _checkStatus();
+    Connectivity().onConnectivityChanged.listen(
+      (ConnectivityResult result) {
+        _streamSink.add(result);
+      },
+    );
+  }
+
+  @override
+  dispose() {
+    super.dispose();
+    _streamSink.close();
+    _streamController.close();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(&#39;Network Status&#39;),
+      ),
+      body: Center(
+        child: StreamBuilder&lt;ConnectivityResult&gt;(
+          stream: _stream,
+          builder: (context, AsyncSnapshot snapshot) {
+            if (snapshot.hasData) {
+              if (snapshot.data == ConnectivityResult.mobile) {
+                _result = &#39;mobile&#39;;
+              } else if (snapshot.data == ConnectivityResult.wifi) {
+                _result = &#39;wifi&#39;;
+              } else if (snapshot.data == ConnectivityResult.none) {
+                return Text(&#39;还没有链接网络&#39;);
+              }
+            }
+
+            if (_result == null) {
+              return CircularProgressIndicator();
+            }
+
+            return ResultText(_result);
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class ResultText extends StatelessWidget {
+  final String result;
+
+  const ResultText(this.result);
+
+  @override
+  Widget build(BuildContext context) {
+    return RichText(
+      text: TextSpan(
+        style: TextStyle(color: Colors.black),
+        text: &#39;正在使用&#39;,
+        children: [
+          TextSpan(
+            text: &#39; $result &#39;,
+            style: TextStyle(
+              color: Colors.red,
+              fontSize: 20.0,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          TextSpan(text: &#39;链接网络&#39;),
+        ],
+      ),
+    );
+  }
+}
+</code></pre><p><code>Random Article</code></p><p>请求网络数据创建流</p><pre><code class="yml">dependencies:
+  dio: ^3.0.9
+  flutter_html: ^0.11.1</code></pre><img src="./images/flutter-stream/random-article.gif" width="320" style="width:320px"><pre><code class="dart">import &#39;dart:async&#39;;
+
+import &#39;package:dio/dio.dart&#39;;
+import &#39;package:flutter/material.dart&#39;;
+import &#39;package:flutter_html/flutter_html.dart&#39;;
+
+class RandomArticle extends StatefulWidget {
+  @override
+  _RandomArticleState createState() =&gt; _RandomArticleState();
+}
+
+class _RandomArticleState extends State&lt;RandomArticle&gt; {
+  static Dio _dio = Dio(
+    BaseOptions(baseUrl: &#39;https://interface.meiriyiwen.com&#39;),
+  );
+
+  static Future&lt;Map&gt; _getArticle() async {
+    Response response = await _dio.get(
+      &#39;/article/random&#39;,
+      queryParameters: {&quot;dev&quot;: 1},
+    );
+
+    final data = response.data[&#39;data&#39;];
+    return data;
+  }
+
+  Stream&lt;Map&gt; _futuresStream;
+
+  @override
+  void initState() {
+    List&lt;Future&lt;Map&gt;&gt; futures = [];
+    for (int i = 0; i &lt; 10; i++) {
+      // 添加 Future
+      futures.add(_getArticle());
+    }
+
+    // 生成 Stream
+    _futuresStream = Stream&lt;Map&gt;.fromFutures(futures);
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(&#39;Random Article&#39;)),
+      body: SingleChildScrollView(
+        child: Center(
+          child: StreamBuilder&lt;Map&gt;(
+            stream: _futuresStream,
+            builder: (context, AsyncSnapshot snapshot) {
+              if (snapshot.hasData) {
+                Map article = snapshot.data;
+
+                return Container(
+                  child: Column(
+                    children: &lt;Widget&gt;[
+                      SizedBox(height: 24.0),
+                      Text(
+                        article[&#39;title&#39;],
+                        style: TextStyle(fontSize: 24.0),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          top: 12.0,
+                          left: 12.0,
+                          right: 12.0,
+                          bottom: 60.0,
+                        ),
+                        child: Html(
+                          data: article[&#39;content&#39;],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              return CircularProgressIndicator();
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+</code></pre><p><code>Broadcast Stream</code></p><p>使用广播流</p><img src="./images/flutter-stream/broadcast-stream.gif" width="320" style="width:320px"><pre><code class="dart">import &#39;dart:async&#39;;
+
+import &#39;package:flutter/material.dart&#39;;
+
+class BroadcastStream extends StatefulWidget {
+  @override
+  _BroadcastStreamState createState() =&gt; _BroadcastStreamState();
+}
+
+class _BroadcastStreamState extends State&lt;BroadcastStream&gt; {
+  StreamController&lt;int&gt; _streamController = StreamController&lt;int&gt;.broadcast();
+  StreamSubscription _subscription1;
+  StreamSubscription _subscription2;
+  StreamSubscription _subscription3;
+
+  int _count = 0;
+  int _s1 = 0;
+  int _s2 = 0;
+  int _s3 = 0;
+
+  @override
+  void initState() {
+    _subscription1 = _streamController.stream.listen((n) {
+      setState(() {
+        _s1 += 1;
+      });
+    });
+
+    _subscription2 = _streamController.stream.listen((n) {
+      setState(() {
+        _s2 += 2;
+      });
+    });
+
+    _subscription3 = _streamController.stream.listen((n) {
+      setState(() {
+        _s3 -= 1;
+      });
+    });
+
+    super.initState();
+  }
+
+  void _add() {
+    if (_count &gt; 10) {
+      // 大于 10 时停止第一个订阅
+      _subscription1.cancel();
+    }
+    _count++;
+    _streamController.add(_count);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _streamController.close();
+    _subscription1.cancel();
+    _subscription2.cancel();
+    _subscription3.cancel();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(&#39;Broadcast Stream&#39;),
+      ),
+      body: Container(
+        width: double.infinity,
+        height: MediaQuery.of(context).size.height,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(&#39;Count: $_count&#39;),
+            SizedBox(height: 12.0),
+            Text(&#39;S1: $_s1&#39;),
+            SizedBox(height: 12.0),
+            Text(&#39;S2: $_s2&#39;),
+            SizedBox(height: 12.0),
+            Text(&#39;S3: $_s3&#39;),
+            SizedBox(height: 12.0),
+            FloatingActionButton(
+              onPressed: _add,
+              child: Icon(Icons.plus_one),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+</code></pre><h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p><code>Stream</code> 是处理异步编程的方式之一，它提供一个了异步的事件序列，并在你准备好接受时发送。在 Dart 中流分为同步流和异步流，以及单订阅流和广播流，有多种方式创建 <code>Stream</code>。</p><h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p><a href="https://dart.cn/tutorials/language/streams" target="_blank" rel="noopener">异步编程：使用 stream</a></p><p><a href="https://dart.cn/articles/libraries/creating-streams" target="_blank" rel="noopener">在 Dart 里使用 Stream</a></p><p><a href="https://guoshuyu.cn/home/wx/Flutter-11.html" target="_blank" rel="noopener">全面深入理解Stream</a></p><p><a href="https://codingwithjoe.com/flutter-building-a-widget-with-streambuilder/" target="_blank" rel="noopener">Building a Widget with StreamBuilder</a></p><p><a href="https://youtu.be/MkKEWHfy99Y" target="_blank" rel="noopener">StreamBuilder (Flutter 本周小部件)</a></p><p><a href="https://youtu.be/nQBpOIHE4eE" target="_blank" rel="noopener">Dart Streams - 聚焦 Flutter</a></p></section><hr><p class="article-license"><span>本文采用<a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode.zh-Hans" target="_blank">知识共享署名-非商业性使用-相同方式共享 4.0 国际许可协议</a>进行许可 </span><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode.zh-Hans" target="_blank"><img class="license-img" alt="知识共享许可协议" src="https://img.shields.io/badge/license-BY--NC--SA%204.0-green"></a></p></article><section class="prev-next card slide-in-right"><a href="/post/2020/04/26/flutter-animation-from-zero/" class="link prev" title="从零开始的 Flutter 动画"><span class="hover-underline-animation">&larr; 从零开始的 Flutter 动画</span> </a><a href="/post/2020/04/03/how-flutter-render/" class="link next" title="Flutter 是如何渲染的？"><span class="hover-underline-animation">Flutter 是如何渲染的？ &rarr;</span></a></section><section class="article-toc"><div class="card"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#前言"><span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Stream-详解"><span class="toc-text">Stream 详解</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Stream-家族"><span class="toc-text">Stream 家族</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#创建-Stream"><span class="toc-text">创建 Stream</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#应用-Stream"><span class="toc-text">应用 Stream</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#总结"><span class="toc-text">总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考"><span class="toc-text">参考</span></a></li></ol></div><div class="card uk-inline-clip uk-padding-remove"><img class="zanshang-img" src="/zanshang.jpg"></div></section><section class="article slide-in-right"><div class="loader" id="loader"><svg viewBox="0 0 50 50"><circle class="ring" cx="25" cy="25" r="20"></circle><circle class="ball" cx="25" cy="5" r="3.5"></circle></svg></div><div class="comment" id="utteranc"></div><noscript>Please activate JavaScript for normal use of comments</noscript></section><a class="card back-to-top" id="backTop">&UpArrow;</a><div id="player"></div></main><script>window.COLD_STONE={root:"/",author:"ColdStone",gaid:"UA-119658292-2",repo:"xrr2016/blog"}</script><script src="https://cdn.bootcss.com/highlight.js/9.15.10/highlight.min.js"></script><script>hljs.initHighlightingOnLoad()</script><script src="https://cdnjs.cloudflare.com/ajax/libs/aplayer/1.10.1/APlayer.min.js" integrity="sha256-6Y7CJDaltoeNgk+ZftgCD9jLgmGv4xKUo8nQ0HgAwVo=" crossorigin="anonymous"></script><script>const ap = new APlayer({
+		container: document.getElementById('player'),
+		fixed: true,
+		audio: [{
+				name: 'DNF·风一样的勇士编钟国乐版',
+				artist: '湖北省博物馆编钟乐团',
+				url: './audios/dnf.mp3',
+				cover: './images/cover.jpg',
+			},
+			{
+				name: 'さくら～あなたに出会えてよかった～',
+				artist: 'Real Street Performance',
+				url: './audios/dnf.mp3',
+				cover: './images/cover2.jpg',
+			},
+			// {
+			// name: '我不配',
+			// artist: '周杰伦',
+			// url: './audios/dnf.mp3',
+			// cover: './images/cover3.jpg',
+			// }
+		]
+	});</script><script src="/scripts/busuanzi.js" referrerpolicy="origin"></script><script src="/scripts/cold-stone.js"></script><script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5eeae335b32b6f13"></script><script src="//www.googletagmanager.com/gtag/js?id=UA-119658292-2"></script><script>function gtag(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],gtag("js",new Date),gtag("config",window.COLD_STONE.gaid)</script></body></html>
